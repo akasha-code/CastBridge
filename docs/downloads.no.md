@@ -8,7 +8,7 @@
 
 [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
-> Private valideringsversjoner. Logg inn på GitHub med en konto som har tilgang til repositoriet for å laste ned filene.
+> Offentlige forhåndsversjoner. Les kravene og valideringsgrensene før installasjon.
 
 ## Nyeste forhåndsversjon
 
@@ -107,5 +107,7 @@ Denne eldre forhåndsversjonen bruker ZIP-basert installasjon og har ikke det ko
 [Installasjonsveiledning på engelsk](../INSTALL.md) · [Bygginstruksjoner på engelsk](https://github.com/akasha-code/CastBridge/tree/main/build) · [Full versjonshistorikk](https://github.com/akasha-code/CastBridge/releases)
 
 [Prosjektoversikt](../README.no.md)
+
+[Code signing policy](signing.md)
 
 Generert fra publiserte GitHub Releases. Tidssone: Europe/Oslo.

@@ -8,7 +8,7 @@
 
 [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
-> Versiones privadas de validación. Iniciá sesión en GitHub con una cuenta que tenga acceso al repositorio para descargar los archivos.
+> Versiones preliminares públicas. Revisá los requisitos y los límites de validación antes de instalar.
 
 ## Última versión preliminar
 
@@ -107,5 +107,7 @@ Esta versión anterior usa instalación mediante ZIP; no incluye el instalador E
 [Guía de instalación en inglés](../INSTALL.md) · [Instrucciones de compilación en inglés](https://github.com/akasha-code/CastBridge/tree/main/build) · [Historial completo de versiones](https://github.com/akasha-code/CastBridge/releases)
 
 [Presentación del proyecto](../README.es.md)
+
+[Code signing policy](signing.md)
 
 Generado desde GitHub Releases publicadas. Horarios: Europe/Oslo.

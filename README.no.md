@@ -39,7 +39,7 @@ Installasjonsprogrammet og grensesnittet er kompilerte Windows-programmer. Den i
 
 Du trenger **Windows 11 x64**, **Python 3.12 x64 med py-starteren**, **FFmpeg med gdigrab, libx264 og HLS**, en kompatibel og signert **Virtual Display Driver 25.7.23** i Windows Driver Store, riktig skjermkonfigurasjon og HTTPS-tilgang for nedlasting av Python-avhengigheter. Kravene kontrolleres før programfiler kopieres. Eksterne verktøy klargjøres separat; installasjonsprogrammet gir veiledning.
 
-**Forhåndsversjon:** programfilene er foreløpig ikke digitalt signert. En kompilert fil erstatter ikke bekreftelse av utgiveren. Nedlastingene er private under valideringen og krever tilgang til GitHub.
+**Forhåndsversjon:** programfilene er foreløpig ikke digitalt signert. En kompilert fil erstatter ikke bekreftelse av utgiveren. Repositoriet og forhåndsversjonene er offentlige. Se [policy for kodesignering](docs/signing.md).
 
 ## Bruk
 

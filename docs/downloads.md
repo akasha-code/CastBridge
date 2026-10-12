@@ -8,7 +8,7 @@
 
 [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
-> Private validation builds. Sign in to GitHub with an account that has repository access to download these files.
+> Public preview builds. Review prerequisites and validation limits before installing.
 
 ## Latest preview
 
@@ -107,5 +107,7 @@ This older preview uses ZIP-based setup; it does not include the compiled EXE in
 [Installation guide](../INSTALL.md) · [Build instructions](https://github.com/akasha-code/CastBridge/tree/main/build) · [Complete release history](https://github.com/akasha-code/CastBridge/releases)
 
 [Project overview](../README.md)
+
+[Code signing policy](signing.md)
 
 Generated from published GitHub Releases. Times: Europe/Oslo.

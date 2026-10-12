@@ -29,6 +29,6 @@ These results apply to the Windows 11 x64 development PC. They do not establish 
 - Publisher signing with a trusted code-signing certificate.
 - Additional sleep/hibernate and interruption scenarios across devices, including diagnosis of the abnormal capture subprocess exit observed during one standby test. Receiver power loss, forced desktop termination and standby reconnection were tested on this PC as described above.
 
-The repository and downloads remain private. Releases remain prereleases while these limits are being evaluated.
+The repository and downloads were made public on 12 October 2026 at the owner's request. Releases remain prereleases while these limits are being evaluated.
 
 [MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

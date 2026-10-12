@@ -1,10 +1,10 @@
-﻿$ErrorActionPreference='Stop'
+$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $repo='akasha-code/CastBridge'
 $metadata=& gh api ('repos/'+$repo)
 if($LASTEXITCODE -ne 0){throw 'Could not read repository metadata. Authenticate GitHub CLI first.'}
 $repository=$metadata|ConvertFrom-Json
-if(-not $repository.private){throw 'Download-page refresh expects the repository to remain private during validation.'}
+if($repository.full_name -ne $repo){throw 'Unexpected repository identity.'}
 $response=& gh api ('repos/'+$repo+'/releases') --paginate --slurp
 if($LASTEXITCODE -ne 0){throw 'Could not read GitHub releases.'}
 $pages=$response|ConvertFrom-Json
@@ -46,12 +46,12 @@ $preview=@($releases|Where-Object {$_.prerelease}|Select-Object -First 1)
 $stable=@($releases|Where-Object {-not $_.prerelease}|Select-Object -First 1)
 foreach($code in @('en','es','nb')) {
     $text=$locale[$code];$lines=[Collections.Generic.List[string]]::new()
-    $lines.Add('[English](downloads.md) · [Español](downloads.es.md) · [Norsk](downloads.no.md)');$lines.Add('');$lines.Add('![CastBridge — MateKraft](../assets/castbridge-banner.svg)');$lines.Add('');$lines.Add('# '+$text.title);$lines.Add('');$lines.Add('**'+$text.credit+' · [matekraft.tech](https://matekraft.tech)**');$lines.Add('');$lines.Add('[Buy me a coffee](https://www.buymeacoffee.com/matekraft)');$lines.Add('');$lines.Add('> '+$text.private);$lines.Add('')
+    $lines.Add('[English](downloads.md) · [Español](downloads.es.md) · [Norsk](downloads.no.md)');$lines.Add('');$lines.Add('![CastBridge — MateKraft](../assets/castbridge-banner.svg)');$lines.Add('');$lines.Add('# '+$text.title);$lines.Add('');$lines.Add('**'+$text.credit+' · [matekraft.tech](https://matekraft.tech)**');$lines.Add('');$lines.Add('[Buy me a coffee](https://www.buymeacoffee.com/matekraft)');$lines.Add('');$notice=if($repository.private){$text.private}else{switch($code){'es'{'Versiones preliminares públicas. Revisá los requisitos y los límites de validación antes de instalar.'};'nb'{'Offentlige forhåndsversjoner. Les kravene og valideringsgrensene før installasjon.'};default{'Public preview builds. Review prerequisites and validation limits before installing.'}}};$lines.Add('> '+$notice);$lines.Add('')
     $lines.Add('## '+$text.preview);$lines.Add('');if($preview.Count){Add-Release $lines $preview[0] $text}else{$lines.Add($text.noPreview);$lines.Add('')}
     $lines.Add('## '+$text.stable);$lines.Add('');if($stable.Count){Add-Release $lines $stable[0] $text}else{$lines.Add($text.noStable);$lines.Add('')}
     $lines.Add('## '+$text.older);$lines.Add('');$selected=@($preview.tag_name)+@($stable.tag_name);foreach($release in $releases){if($release.tag_name -notin $selected){Add-Release $lines $release $text}}
-    $lines.Add('> '+$text.warning);$lines.Add('');$lines.Add('['+$text.guide+'](../INSTALL.md) · ['+$text.source+'](https://github.com/akasha-code/CastBridge/tree/main/build) · ['+$text.history+'](https://github.com/'+$repo+'/releases)');$lines.Add('');$projectReadme=if($code -eq 'es'){'README.es.md'}elseif($code -eq 'nb'){'README.no.md'}else{'README.md'};$lines.Add('['+$text.home+'](../'+$projectReadme+')');$lines.Add('');$lines.Add($text.updated)
+    $lines.Add('> '+$text.warning);$lines.Add('');$lines.Add('['+$text.guide+'](../INSTALL.md) · ['+$text.source+'](https://github.com/akasha-code/CastBridge/tree/main/build) · ['+$text.history+'](https://github.com/'+$repo+'/releases)');$lines.Add('');$projectReadme=if($code -eq 'es'){'README.es.md'}elseif($code -eq 'nb'){'README.no.md'}else{'README.md'};$lines.Add('['+$text.home+'](../'+$projectReadme+')');$lines.Add('');$lines.Add('[Code signing policy](signing.md)');$lines.Add('');$lines.Add($text.updated)
     [IO.File]::WriteAllLines((Join-Path $docs $text.file),$lines,[Text.UTF8Encoding]::new($false))
 }
 [IO.File]::WriteAllText((Join-Path $PSScriptRoot 'releases.json'),(ConvertTo-Json -InputObject $snapshot -Depth 6)+[Environment]::NewLine,[Text.UTF8Encoding]::new($false))
-'Download pages refreshed from '+$releases.Count+' published releases. Repository remains private.'
+'Download pages refreshed from '+$releases.Count+' published releases. Visibility: '+$repository.visibility

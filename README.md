@@ -39,7 +39,7 @@ The installer and desktop interface are compiled Windows executables. The instal
 
 Requirements: **Windows 11 x64**, **Python 3.12 x64 with the py launcher**, **FFmpeg with gdigrab, libx264 and HLS**, compatible signed **Virtual Display Driver 25.7.23** staged in Driver Store, the matching monitor configuration, and HTTPS access for Python dependency downloads. These are checked before copying application files. External tools are prepared separately; the installer and [installation guide](INSTALL.md) explain how.
 
-**Preview:** the executables are not digitally signed yet. A compiled file does not replace publisher verification. Downloads remain private during validation and require GitHub access.
+**Preview:** the executables are not digitally signed yet. A compiled file does not replace publisher verification. The repository and preview downloads are public. See the [code signing policy](docs/signing.md).
 
 ## Use
 

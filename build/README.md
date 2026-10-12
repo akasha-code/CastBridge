@@ -2,7 +2,7 @@
 
 [Downloads](../docs/downloads.md) · [Project](../README.md)
 
-Build configuration and release-maintenance tools live here. Installers and ZIP payloads are attached to **GitHub Releases**, not committed to Git history. The repository and downloads remain private during validation.
+Build configuration and release-maintenance tools live here. Installers and ZIP payloads are attached to **GitHub Releases**, not committed to Git history. The repository and downloads are public; unvalidated builds remain prereleases.
 
 ## Build on Windows
 
@@ -47,7 +47,7 @@ After publishing a release, run:
 .\build\Update-Downloads.ps1
 ```
 
-This reads published releases using the authenticated GitHub CLI. It verifies that the repository is still private and regenerates the English, Spanish and Norwegian download pages, plus `build/releases.json`. Review and commit those files. It does not publish a website, change repository visibility or store credentials.
+This reads published releases using the authenticated GitHub CLI. It verifies the repository identity, reads its current visibility and regenerates the English, Spanish and Norwegian download pages, plus `build/releases.json`. Review and commit those files. It does not publish a website, change repository visibility or store credentials.
 
 The latest preview and latest stable release are selected separately from their publication dates. A prerelease is not presented as stable, and drafts are excluded.
 

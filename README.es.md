@@ -39,7 +39,7 @@ El instalador y la interfaz son ejecutables compilados de Windows. El paquete in
 
 Necesitás **Windows 11 x64**, **Python 3.12 x64 con lanzador py**, **FFmpeg con gdigrab, libx264 y HLS**, **Virtual Display Driver 25.7.23** compatible y firmado, agregado al Driver Store, la configuración del monitor y acceso HTTPS para descargar dependencias Python. Todo se comprueba antes de copiar archivos de la aplicación. Las herramientas externas se preparan por separado; el asistente explica cómo hacerlo.
 
-**Versión preliminar:** los ejecutables todavía no tienen firma digital. Un archivo compilado no reemplaza la verificación del editor. Las descargas siguen privadas durante la validación y requieren acceso a GitHub.
+**Versión preliminar:** los ejecutables todavía no tienen firma digital. Un archivo compilado no reemplaza la verificación del editor. El repositorio y las descargas preliminares son públicos. Consultá la [política de firma](docs/signing.md).
 
 ## Uso
 
