@@ -18,6 +18,7 @@ public static class NativeChecks {
         foreach(string relative in new[]{"..\\outside.txt",@"C:\Windows\outside.txt"}){bool refused=false;try{Common.Under(Path.Combine(source,"artifacts","test-root"),relative);}catch(InvalidDataException){refused=true;}if(!refused)throw new Exception("Unsafe archive path accepted");}
         string temporary=Path.Combine(source,"artifacts","locale-test-"+Guid.NewGuid().ToString("N"));string settings=Path.Combine(temporary,"artifacts","ui-settings.json");
         foreach(string code in new[]{"es","nb","en"}){Common.SaveJson(settings,new{language=code});Common.Language="en";Common.LoadSavedLanguage(temporary);if(Common.Language!=code)throw new Exception("Saved language was not restored");}
-        Console.WriteLine("Native checks passed: language selection persistence, JSON arrays, process arguments and archive boundaries.");return 0;
+        string shortcut=Path.Combine(temporary,"CastBridge.lnk");Common.Shortcut(Path.Combine(source,"CastBridge.exe"),shortcut);if(!File.Exists(shortcut))throw new Exception("Native shortcut creation failed");
+        Console.WriteLine("Native checks passed: language persistence, JSON arrays, process arguments, archive boundaries and shortcut creation.");return 0;
     }
 }
