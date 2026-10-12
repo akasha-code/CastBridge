@@ -1,5 +1,28 @@
 [
   {
+    "tag": "v0.2.0-alpha.2",
+    "prerelease": true,
+    "publishedAt": "2026-10-12T19:17:01.0000000+00:00",
+    "url": "https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.2",
+    "assets": [
+      {
+        "name": "CastBridge-Setup.exe",
+        "bytes": 248832,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/CastBridge-Setup.exe"
+      },
+      {
+        "name": "CastBridge-Windows-x64-20261012-211555.zip",
+        "bytes": 139636,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/CastBridge-Windows-x64-20261012-211555.zip"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 198,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/SHA256SUMS.txt"
+      }
+    ]
+  },
+  {
     "tag": "v0.2.0-alpha.1",
     "prerelease": true,
     "publishedAt": "2026-10-12T17:57:48.0000000+00:00",

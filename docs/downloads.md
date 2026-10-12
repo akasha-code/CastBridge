@@ -10,6 +10,24 @@
 
 ## Latest preview
 
+### v0.2.0-alpha.2
+
+Published: 2026-10-12 21:17 (Europe/Oslo)
+
+**[Download Windows x64 installer](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/CastBridge-Setup.exe)**
+
+[Download ZIP package](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/CastBridge-Windows-x64-20261012-211555.zip)
+
+[SHA-256 checksums](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.2/SHA256SUMS.txt)
+
+[Release notes](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.2)
+
+## Latest stable
+
+No stable version has been published yet.
+
+## Previous versions
+
 ### v0.2.0-alpha.1
 
 Published: 2026-10-12 19:57 (Europe/Oslo)
@@ -21,12 +39,6 @@ Published: 2026-10-12 19:57 (Europe/Oslo)
 [SHA-256 checksums](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.1/SHA256SUMS.txt)
 
 [Release notes](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.1)
-
-## Latest stable
-
-No stable version has been published yet.
-
-## Previous versions
 
 ### v0.1.0-alpha.2
 
