@@ -26,8 +26,9 @@ $script:state='Desconectado'
 $tray=[Windows.Forms.NotifyIcon]::new()
 $appIcon=[Drawing.Icon]::new((Join-Path $root 'assets\castaggregator.ico'))
 $tray.Icon=$appIcon
-$tray.Text='CastAggregator: Desconectado'
+$tray.Text='CastBridge - MateKraft: Desconectado'
 $menu=[Windows.Forms.ContextMenuStrip]::new()
+$brandItem=$menu.Items.Add('CastBridge | Una producción de MateKraft'); $brandItem.Enabled=$false
 $statusItem=$menu.Items.Add('Desconectado'); $statusItem.Enabled=$false
 $selectItem=$menu.Items.Add('Elegir dispositivo...')
 $renameItem=$menu.Items.Add('Nombre de pantalla...')
@@ -46,7 +47,7 @@ function Set-State([string]$value) {
     if ($IntegrationTestDeviceId) { [Console]::WriteLine($value) }
     $script:state=$value
     $statusItem.Text=$value
-    $tray.Text='CastAggregator: '+$value
+    $tray.Text='CastBridge - MateKraft: '+$value
     $connectItem.Enabled=($null -eq $script:worker -and $null -ne $script:selected -and $null -eq $script:discovery)
     $selectItem.Enabled=($null -eq $script:worker -and $null -eq $script:discovery)
     $renameItem.Enabled=($null -eq $script:worker -and $null -ne $script:selected)
@@ -56,7 +57,7 @@ function Set-State([string]$value) {
 }
 function Show-Problem([string]$message) {
     Add-Content -LiteralPath (Join-Path $root 'artifacts\tray-errors.log') -Value ((Get-Date -Format o)+' '+$message)
-    $tray.ShowBalloonTip(8000,'CastAggregator',$message,[Windows.Forms.ToolTipIcon]::Error)
+    $tray.ShowBalloonTip(8000,'CastBridge - MateKraft',$message,[Windows.Forms.ToolTipIcon]::Error)
 }
 function Set-LatencyProfile([int]$Profile,[bool]$Save=$true) {
     $stableProfileItem.Checked=($Profile -eq 0)

@@ -1,9 +1,9 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 [Windows.Forms.Application]::EnableVisualStyles()
 $form=[Windows.Forms.Form]::new()
-$form.Text='Instalar CastAggregator'; $form.Size=[Drawing.Size]::new(820,540); $form.StartPosition='CenterScreen'
+$form.Text='Instalar CastBridge - MateKraft'; $form.Size=[Drawing.Size]::new(820,580); $form.StartPosition='CenterScreen'
 $list=[Windows.Forms.ListView]::new(); $list.View='Details'; $list.FullRowSelect=$true; $list.MultiSelect=$false
 $list.Location=[Drawing.Point]::new(15,15); $list.Size=[Drawing.Size]::new(770,210)
 [void]$list.Columns.Add('Requisito',640); [void]$list.Columns.Add('Estado',100)
@@ -14,7 +14,8 @@ $download=[Windows.Forms.Button]::new(); $download.Text='Abrir descarga'; $downl
 $guide=[Windows.Forms.Button]::new(); $guide.Text='Ver instrucciones'; $guide.Location=[Drawing.Point]::new(315,390); $guide.Width=150
 $install=[Windows.Forms.Button]::new(); $install.Text='Instalar'; $install.Location=[Drawing.Point]::new(635,390); $install.Width=150; $install.Enabled=$false
 $status=[Windows.Forms.Label]::new(); $status.Location=[Drawing.Point]::new(15,445); $status.Size=[Drawing.Size]::new(770,40)
-$form.Controls.AddRange(@($list,$help,$refresh,$download,$guide,$install,$status))
+$credit=[Windows.Forms.Label]::new(); $credit.Text='Una producción de MateKraft'; $credit.Location=[Drawing.Point]::new(15,495); $credit.AutoSize=$true
+$form.Controls.AddRange(@($list,$help,$refresh,$download,$guide,$install,$status,$credit))
 $list.Add_SelectedIndexChanged({
     if ($list.SelectedItems.Count) { $help.Text=$list.SelectedItems[0].Tag.Help; $download.Enabled=[bool]$list.SelectedItems[0].Tag.Url }
 })
@@ -34,7 +35,7 @@ $download.Add_Click({if ($list.SelectedItems.Count -and $list.SelectedItems[0].T
 $guide.Add_Click({Start-Process notepad.exe -ArgumentList ('"'+(Join-Path (Split-Path $PSScriptRoot -Parent) 'INSTALL.md')+'"')})
 $install.Add_Click({
     $install.Enabled=$false; $refresh.Enabled=$false; $status.Text='Instalando; mira la consola para seguir el progreso.'; $form.Refresh()
-    try { & (Join-Path $PSScriptRoot 'Setup-Local.ps1'); $status.Text='Instalacion completada. Abri CastAggregator.lnk en la carpeta extraida.' }
+    try { & (Join-Path $PSScriptRoot 'Setup-Local.ps1'); $status.Text='Instalacion completada. Abri CastBridge.lnk en la carpeta extraida.' }
     catch { $status.Text='Instalacion no completada: '+$_.Exception.Message }
     finally { $refresh.Enabled=$true }
 })

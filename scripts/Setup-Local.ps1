@@ -1,4 +1,4 @@
-param([switch]$CheckOnly)
+﻿param([switch]$CheckOnly)
 $ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
 $preflight=& (Join-Path $PSScriptRoot 'Test-Prerequisites.ps1') -Root $root
@@ -21,5 +21,5 @@ try {
     & .\.venv\Scripts\python.exe -m pip check
     if ($LASTEXITCODE -ne 0) { throw 'Dependency validation failed.' }
     & (Join-Path $PSScriptRoot 'New-Shortcut.ps1')
-    'Runtime prepared. Open CastAggregator.lnk or CastAggregator.cmd.'
+    'Runtime prepared. Open CastBridge.lnk or CastBridge.cmd. Una producción de MateKraft.'
 } finally { Pop-Location }
