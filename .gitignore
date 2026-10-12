@@ -1,0 +1,12 @@
+.venv/
+__pycache__/
+artifacts/
+session-state/
+bin/
+*.lnk
+.env
+.env.*
+*.pem
+*.key
+0[1-9]-*.md
+1[0-9]-*.md
