@@ -65,6 +65,12 @@ C#-grensesnittet bruker .NET Framework på støttede Windows 11-systemer. Byggin
 
 Utviklingsskriptene bruker PowerShell; de distribuerte programfilene starter det ikke. Grensesnittet og installasjonsprogrammet ligger i `native/`, motoren i `prototype/`, og oversettelsene i `assets/languages.json`. Interne enhetsidentifikatorer beholdes for kompatibilitet med eksisterende innstillinger.
 
+## Lisens og kreditering
+
+CastBridges originale kode, dokumentasjon og grafikk laget for prosjektet er lisensiert under [Apache License 2.0](LICENSE). Se [NOTICE](NOTICE) for opphavsrett og kreditering av MateKraft, og [TRADEMARKS.md](TRADEMARKS.md) for navne- og merkepolicyen.
+
+Avhengigheter beholder sine egne lisenser. [Tredjepartsmerknader](THIRD_PARTY_NOTICES.md) dokumenterer pakkene og eksterne verktøy; lisensene finnes i [third_party/licenses](third_party/licenses). Apache-2.0 erstatter ikke disse lisensene.
+
 ## La oss starte med en meningsfull samtale
 
 Nyttige verktøy begynner med et reelt problem. Hvis CastBridge hjelper deg, eller du har en konkret idé til forbedring, la oss snakke sammen.

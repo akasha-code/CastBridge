@@ -45,3 +45,7 @@ After publishing a release, run:
 This reads published releases using the authenticated GitHub CLI. It verifies that the repository is still private and regenerates the English, Spanish and Norwegian download pages, plus `build/releases.json`. Review and commit those files. It does not publish a website, change repository visibility or store credentials.
 
 The latest preview and latest stable release are selected separately from their publication dates. A prerelease is not presented as stable, and drafts are excluded.
+
+## License files in release payloads
+
+New payloads include LICENSE, NOTICE, TRADEMARKS.md, THIRD_PARTY_NOTICES.md and third_party/licenses/. Keep upstream texts intact and review obligations before bundling external tools. Existing release assets are not replaced silently.

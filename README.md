@@ -65,6 +65,12 @@ The C# interface uses the .NET Framework available on supported Windows 11 syste
 
 Development scripts use PowerShell; the distributed executables do not invoke it. `native/` contains the interface and installer, `prototype/` the transmission engine, and `assets/languages.json` the translation catalogue. Internal device identifiers are preserved for compatibility with existing display preferences.
 
+## License and attribution
+
+Original CastBridge code, documentation and project-created artwork are licensed under [Apache License 2.0](LICENSE). See [NOTICE](NOTICE) for copyright and MateKraft attribution, and [TRADEMARKS.md](TRADEMARKS.md) for the name and marks policy.
+
+Dependencies retain their own licenses. [Third-party notices](THIRD_PARTY_NOTICES.md) document the pinned packages and external tools; copied upstream license texts are in [third_party/licenses](third_party/licenses). Apache-2.0 does not relicense those components.
+
 ## Let's start with a meaningful conversation
 
 Useful tools start with a real problem. If CastBridge helps you, or you have a concrete idea to improve it, let's talk.

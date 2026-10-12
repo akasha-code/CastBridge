@@ -65,6 +65,12 @@ La interfaz C# usa .NET Framework disponible en Windows 11 compatible. El proces
 
 Los scripts de desarrollo usan PowerShell; los ejecutables distribuidos no lo invocan. La interfaz y el instalador están en `native/`, el motor en `prototype/` y las traducciones en `assets/languages.json`. Los identificadores internos se conservan para mantener compatibilidad con las preferencias existentes.
 
+## Licencia y atribución
+
+El código original de CastBridge, su documentación y el arte creado para el proyecto usan [Apache License 2.0](LICENSE). Consultá [NOTICE](NOTICE) para los créditos y la atribución a MateKraft, y [TRADEMARKS.md](TRADEMARKS.md) para la política de nombres y marcas.
+
+Las dependencias conservan sus licencias. Los [avisos de terceros](THIRD_PARTY_NOTICES.md) documentan los paquetes y herramientas externas; sus textos de licencia están en [third_party/licenses](third_party/licenses). Apache-2.0 no reemplaza esas licencias.
+
 ## Empecemos con una conversación que tenga sentido
 
 Las herramientas útiles nacen de un problema real. Si CastBridge te ayuda o tenés una idea concreta para mejorarlo, conversemos.

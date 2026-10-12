@@ -3,8 +3,9 @@ $root=Split-Path $PSScriptRoot -Parent
 & (Join-Path $PSScriptRoot 'Build-Desktop.ps1')
 $stage=Join-Path $root ('artifacts\package-'+[Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
-foreach ($name in @('assets','prototype','artifacts','driver','docs')) {New-Item -ItemType Directory -Path (Join-Path $stage $name) | Out-Null}
-foreach ($name in @('CastBridge.exe','README.md','README.es.md','README.no.md','INSTALL.md','requirements-prototype.lock.txt')) {Copy-Item -LiteralPath (Join-Path $root $name) -Destination $stage}
+foreach ($name in @('assets','prototype','artifacts','driver','docs','third_party')) {New-Item -ItemType Directory -Path (Join-Path $stage $name) | Out-Null}
+foreach ($name in @('CastBridge.exe','README.md','README.es.md','README.no.md','INSTALL.md','requirements-prototype.lock.txt','LICENSE','NOTICE','TRADEMARKS.md','THIRD_PARTY_NOTICES.md')) {Copy-Item -LiteralPath (Join-Path $root $name) -Destination $stage}
+Copy-Item -LiteralPath (Join-Path $root 'third_party\licenses') -Destination (Join-Path $stage 'third_party') -Recurse
 Get-ChildItem (Join-Path $root 'prototype') -Filter '*.py' -File | Copy-Item -Destination (Join-Path $stage 'prototype')
 Get-ChildItem (Join-Path $root 'docs') -Filter 'downloads*.md' -File | Copy-Item -Destination (Join-Path $stage 'docs')
 foreach ($name in @('castbridge.ico','castbridge.png','castbridge-banner.svg','languages.json')) {Copy-Item -LiteralPath (Join-Path $root ('assets\'+$name)) -Destination (Join-Path $stage 'assets')}
