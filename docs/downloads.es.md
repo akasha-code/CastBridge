@@ -6,9 +6,29 @@
 
 **Una producción de MateKraft · [matekraft.tech](https://matekraft.tech)**
 
+[Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+
 > Versiones privadas de validación. Iniciá sesión en GitHub con una cuenta que tenga acceso al repositorio para descargar los archivos.
 
 ## Última versión preliminar
+
+### v0.2.0-alpha.4
+
+Publicada: 2026-10-12 21:34 (Europe/Oslo)
+
+**[Descargar instalador Windows x64](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/CastBridge-Setup.exe)**
+
+[Descargar paquete ZIP](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/CastBridge-Windows-x64-20261012-213312.zip)
+
+[Checksums SHA-256](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/SHA256SUMS.txt)
+
+[Notas de la versión](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.4)
+
+## Última versión estable
+
+Todavía no se publicó una versión estable.
+
+## Versiones anteriores
 
 ### v0.2.0-alpha.3
 
@@ -21,12 +41,6 @@ Publicada: 2026-10-12 21:25 (Europe/Oslo)
 [Checksums SHA-256](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.3/SHA256SUMS.txt)
 
 [Notas de la versión](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.3)
-
-## Última versión estable
-
-Todavía no se publicó una versión estable.
-
-## Versiones anteriores
 
 ### v0.2.0-alpha.2
 

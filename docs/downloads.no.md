@@ -6,9 +6,29 @@
 
 **En produksjon fra MateKraft · [matekraft.tech](https://matekraft.tech)**
 
+[Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+
 > Private valideringsversjoner. Logg inn på GitHub med en konto som har tilgang til repositoriet for å laste ned filene.
 
 ## Nyeste forhåndsversjon
+
+### v0.2.0-alpha.4
+
+Publisert: 2026-10-12 21:34 (Europe/Oslo)
+
+**[Last ned installasjonsprogram for Windows x64](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/CastBridge-Setup.exe)**
+
+[Last ned ZIP-pakke](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/CastBridge-Windows-x64-20261012-213312.zip)
+
+[SHA-256-kontrollsummer](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.4/SHA256SUMS.txt)
+
+[Versjonsnotater](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.4)
+
+## Nyeste stabile versjon
+
+Ingen stabil versjon er publisert ennå.
+
+## Tidligere versjoner
 
 ### v0.2.0-alpha.3
 
@@ -21,12 +41,6 @@ Publisert: 2026-10-12 21:25 (Europe/Oslo)
 [SHA-256-kontrollsummer](https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.3/SHA256SUMS.txt)
 
 [Versjonsnotater](https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.3)
-
-## Nyeste stabile versjon
-
-Ingen stabil versjon er publisert ennå.
-
-## Tidligere versjoner
 
 ### v0.2.0-alpha.2
 
