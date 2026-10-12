@@ -19,7 +19,7 @@ Utvid Windows-skrivebordet til en Chromecast.<br />
 
 ## Hva programmet gjør
 
-CastBridge oppretter en midlertidig skjerm på 1280 × 720 og sender dette skrivebordet til den valgte Chromecast-enheten via det lokale nettverket. Flytt et vindu til den ekstra skjermen og styr det med PC-ens mus og tastatur. Ved normal frakobling fjernes den midlertidige skjermen, og oppsettet for de fysiske skjermene gjenopprettes.
+CastBridge oppretter en midlertidig skjerm på 1280 x 720 og sender dette skrivebordet til den valgte Chromecast-enheten via det lokale nettverket. Flytt et vindu til den ekstra skjermen og styr det med PC-ens mus og tastatur. Ved normal frakobling fjernes den midlertidige skjermen, og oppsettet for de fysiske skjermene gjenopprettes.
 
 - Velg mottaker og navnet som vises på TV-en.
 - Behold plasseringen av den virtuelle skjermen for hver mottaker.

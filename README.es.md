@@ -19,7 +19,7 @@ Extendé tu escritorio de Windows a un Chromecast.<br />
 
 ## Qué hace
 
-CastBridge crea un monitor temporal de 1280 × 720 y transmite ese escritorio al Chromecast que elijas mediante la red local. Mové una ventana a la pantalla adicional y controlala con el mouse y el teclado de tu PC. Al desconectar normalmente, se retira el monitor temporal y se restaura la configuración de las pantallas físicas.
+CastBridge crea un monitor temporal de 1280 x 720 y transmite ese escritorio al Chromecast que elijas mediante la red local. Mové una ventana a la pantalla adicional y controlala con el mouse y el teclado de tu PC. Al desconectar normalmente, se retira el monitor temporal y se restaura la configuración de las pantallas físicas.
 
 - Elegí el receptor y el nombre que aparece en la TV.
 - Conservá la posición del monitor virtual para cada receptor.

@@ -19,7 +19,7 @@ Extend your Windows desktop to a Chromecast.<br />
 
 ## What it does
 
-CastBridge creates a temporary 1280 × 720 monitor and streams that desktop to your selected Chromecast over the local network. Move a window onto the extra screen and control it with your PC's mouse and keyboard. Disconnecting normally removes the temporary monitor and restores the physical display configuration.
+CastBridge creates a temporary 1280 x 720 monitor and streams that desktop to your selected Chromecast over the local network. Move a window onto the extra screen and control it with your PC's mouse and keyboard. Disconnecting normally removes the temporary monitor and restores the physical display configuration.
 
 - Choose the receiver and the name shown on the TV.
 - Remember the virtual monitor position for each receiver.
