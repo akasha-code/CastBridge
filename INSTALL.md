@@ -6,7 +6,7 @@ A production by [MateKraft](https://matekraft.tech).
 
 ## Open the installer
 
-Download `CastBridge-Setup.exe` from the latest preview release. Choose English, Spanish or Norwegian Bokmål. Prerequisite checks and guidance are translated. **Install remains disabled until every check passes**, and checks are repeated before installation.
+Download `CastBridge-Setup.exe` from the latest preview release. Choose English, Spanish or Norwegian Bokmål. Prerequisite checks and guidance are translated. **Install remains disabled until every check passes**, and checks are repeated before installation. When all checks pass, the retry and prerequisite actions are hidden. Download actions identify the missing component and only appear when it needs attention.
 
 Windows 11 x64 and its .NET Framework runtime are required to open the executable. This preview is not digitally signed yet. Do not disable Windows protections to accept a file you have not verified.
 
@@ -15,7 +15,7 @@ Windows 11 x64 and its .NET Framework runtime are required to open the executabl
 1. **Python:** install Python 3.12 x64 from the official Python Windows downloads, including the `py` launcher. Reopen the installer afterwards.
 2. **FFmpeg:** use a Windows build with `gdigrab`, `libx264` and HLS output. Add its `bin` directory to PATH and reopen the installer. CastBridge does not change PATH.
 3. **Driver:** download and extract signed Virtual Display Driver **25.7.23** from its official release. In an administrator **Command Prompt**, run `pnputil /add-driver "FULL_PATH\MttVDD.inf"`. Do not add `/install` or create another persistent ROOT device. Keep signature verification enabled. CastBridge creates its own temporary device when connecting.
-4. **Configuration:** use **Save configuration template** in the installer. Copy that XML to `C:\VirtualDisplayDriver\vdd_settings.xml` with administrator permission. Review and back up any existing configuration instead of overwriting settings used by another application. The template configures one 1280 × 720 monitor at 60 Hz with a software cursor.
+4. **Configuration:** use **Save display configuration** in the installer. Copy that XML to `C:\VirtualDisplayDriver\vdd_settings.xml` with administrator permission. Review and back up any existing configuration instead of overwriting settings used by another application. The template configures one 1280 × 720 monitor at 60 Hz with a software cursor.
 5. **Network:** allow HTTPS access to `pypi.org` and `files.pythonhosted.org` for dependency downloads. The installer does not modify proxy, firewall or certificate settings.
 6. **Sessions:** disconnect and exit CastBridge before installation or an update. Review any persistent virtual display using the same driver; the application rejects concurrent sessions.
 

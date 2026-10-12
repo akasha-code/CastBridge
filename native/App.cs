@@ -14,8 +14,8 @@ using System.Windows.Forms;
 [assembly: AssemblyProduct("CastBridge")]
 [assembly: AssemblyCompany("MateKraft")]
 [assembly: AssemblyVersion("0.2.0.0")]
-[assembly: AssemblyFileVersion("0.2.0.1")]
-[assembly: AssemblyInformationalVersion("0.2.0-alpha.2")]
+[assembly: AssemblyFileVersion("0.2.0.2")]
+[assembly: AssemblyInformationalVersion("0.2.0-alpha.3")]
 namespace CastBridge {
 public class Desktop : ApplicationContext {
     readonly string root=Common.Root, prefs=Path.Combine(Common.Root,"artifacts","preferences.json"), settings=Path.Combine(Common.Root,"artifacts","ui-settings.json");

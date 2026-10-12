@@ -16,7 +16,7 @@ using System.Windows.Forms;
 
 namespace CastBridge {
 public static class Common {
-    public const string Version="0.2.0-alpha.2";
+    public const string Version="0.2.0-alpha.3";
     public static JavaScriptSerializer Json { get { return new JavaScriptSerializer(); } }
     public static readonly string Root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
     public static string Language = "en";
@@ -39,7 +39,7 @@ public static class Common {
     public static string T(string key) { return Convert.ToString(((Dictionary<string,object>)translations[Language])[key]); }
     public static Icon Icon() { return System.Drawing.Icon.ExtractAssociatedIcon(Application.ExecutablePath); }
     public static ComboBox Languages() {
-        var box = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200 };
+        var box = new ComboBox { DropDownStyle = ComboBoxStyle.DropDownList, Width = 200, ForeColor = SystemColors.WindowText, BackColor = SystemColors.Window };
         box.Items.AddRange(new object[] { "English", "Español", "Norsk (bokmål)" });
         box.SelectedIndex = Language == "es" ? 1 : Language == "nb" ? 2 : 0;
         return box;

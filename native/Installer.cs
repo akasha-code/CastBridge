@@ -14,24 +14,35 @@ public sealed class Installer : Form {
     readonly ComboBox languages=Common.Languages();readonly ListView list=new ListView();readonly TextBox help=new TextBox(),destination=new TextBox();
     readonly Label status=new Label(),credit=new Label(),folderLabel=new Label(),unsigned=new Label();readonly Button check=new Button(),download=new Button(),install=new Button(),browse=new Button(),template=new Button(),about=new Button();
     List<Requirement> requirements;bool busy,complete;
-    public Installer() {
+    public Installer(bool test=false) {
         Text="CastBridge — MateKraft";ClientSize=new Size(820,690);MinimumSize=new Size(836,729);StartPosition=FormStartPosition.CenterScreen;Icon=Common.Icon();Font=new Font("Segoe UI",10);BackColor=Color.FromArgb(10,20,18);ForeColor=Color.FromArgb(247,242,228);
         var title=new Label {Text="CastBridge",Font=new Font("Segoe UI",24,FontStyle.Bold),Location=new Point(20,15),AutoSize=true};credit.Location=new Point(22,63);credit.Size=new Size(500,25);
         languages.Location=new Point(590,30);languages.SelectedIndexChanged+=delegate{Common.SetLanguage(languages.SelectedIndex);RefreshText();};
-        folderLabel.Location=new Point(20,103);folderLabel.Size=new Size(250,25);destination.Location=new Point(20,132);destination.Size=new Size(650,27);destination.Text=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","CastBridge");destination.TextChanged+=delegate{install.Enabled=false;};
+        folderLabel.Location=new Point(20,103);folderLabel.Size=new Size(250,25);destination.Location=new Point(20,132);destination.Size=new Size(650,27);destination.Text=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"Programs","CastBridge");destination.TextChanged+=delegate{UpdateActions();};
         browse.Location=new Point(685,128);browse.Size=new Size(115,32);browse.Click+=delegate{using(var dialog=new FolderBrowserDialog()){dialog.SelectedPath=destination.Text;if(dialog.ShowDialog(this)==DialogResult.OK)destination.Text=dialog.SelectedPath;}};
-        list.Location=new Point(20,180);list.Size=new Size(780,205);list.View=View.Details;list.FullRowSelect=true;list.MultiSelect=false;list.Columns.Add("",650);list.Columns.Add("",100);list.SelectedIndexChanged+=delegate{if(list.SelectedItems.Count>0){var item=(Requirement)list.SelectedItems[0].Tag;help.Text=Common.T(item.Key+"Help");download.Enabled=item.Url!="";}};
+        list.Location=new Point(20,180);list.Size=new Size(780,205);list.View=View.Details;list.FullRowSelect=true;list.MultiSelect=false;list.Columns.Add("",650);list.Columns.Add("",100);list.SelectedIndexChanged+=delegate{UpdateActions();};
         help.Location=new Point(20,395);help.Size=new Size(780,115);help.Multiline=true;help.ReadOnly=true;help.ScrollBars=ScrollBars.Vertical;
         Button[] buttons={check,download,template,about,install};int[] widths={155,145,205,120,115};int x=20;for(int i=0;i<buttons.Length;i++){buttons[i].Location=new Point(x,525);buttons[i].Size=new Size(widths[i],45);x+=widths[i]+8;}
         status.Location=new Point(20,585);status.Size=new Size(780,50);unsigned.Location=new Point(20,648);unsigned.Size=new Size(780,27);unsigned.ForeColor=Color.FromArgb(212,175,55);credit.ForeColor=Color.FromArgb(212,175,55);foreach(var button in buttons){button.ForeColor=Color.FromArgb(10,20,18);button.BackColor=Color.FromArgb(247,242,228);}
         install.Enabled=false;download.Enabled=false;check.Click+=async delegate{await Check();};download.Click+=delegate{if(list.SelectedItems.Count>0)Process.Start(((Requirement)list.SelectedItems[0].Tag).Url);};template.Click+=delegate{SaveTemplate();};about.Click+=delegate{Desktop.About(this);};install.Click+=async delegate{if(complete){Process.Start(Path.Combine(destination.Text,"CastBridge.exe"));Close();}else await Install();};
         Controls.AddRange(new Control[]{title,credit,languages,folderLabel,destination,browse,list,help,check,download,template,about,install,status,unsigned});
         FormClosing+=delegate(object sender,FormClosingEventArgs e){if(busy){e.Cancel=true;MessageBox.Show(this,Common.T("waiting"),"CastBridge");}};
-        RefreshText();Shown+=async delegate{await Check();};
+        RefreshText();if(!test)Shown+=async delegate{await Check();};
     }
     void RefreshText() {Text=Common.T("installTitle")+" — MateKraft";credit.Text=Common.T("credit");folderLabel.Text=Common.T("destination");browse.Text=Common.T("browse");check.Text=Common.T("check");download.Text=Common.T("download");template.Text=Common.T("template");about.Text=Common.T("about");install.Text=Common.T(complete?"launch":"install");unsigned.Text=Common.T("unsigned");list.Columns[0].Text=Common.T("requirement");list.Columns[1].Text=Common.T("status");Render();if(!busy)status.Text=Common.T(complete?"complete":requirements!=null && requirements.All(r=>r.Ready)?"installReady":"blocked");}
-    void Render() {string selected=list.SelectedItems.Count>0?((Requirement)list.SelectedItems[0].Tag).Key:null;list.Items.Clear();if(requirements!=null)foreach(var requirement in requirements){var row=new ListViewItem(Common.T(requirement.Key+"Name"));row.Tag=requirement;row.SubItems.Add(Common.T(requirement.Ready?"ready":"missingState"));list.Items.Add(row);if(requirement.Key==selected)row.Selected=true;}help.Text=selected==null?Common.T("selectHelp"):Common.T(selected+"Help");}
-    void Enable(bool enabled) {languages.Enabled=enabled;check.Enabled=enabled;browse.Enabled=enabled;destination.Enabled=enabled;template.Enabled=enabled;about.Enabled=enabled;}
+    void Render() {string selected=list.SelectedItems.Count>0?((Requirement)list.SelectedItems[0].Tag).Key:null;list.Items.Clear();if(requirements!=null)foreach(var requirement in requirements){var row=new ListViewItem(Common.T(requirement.Key+"Name"));row.Tag=requirement;row.SubItems.Add(Common.T(requirement.Ready?"ready":"missingState"));list.Items.Add(row);if(requirement.Key==selected)row.Selected=true;}if(list.SelectedItems.Count==0&&requirements!=null){foreach(ListViewItem row in list.Items)if(!((Requirement)row.Tag).Ready){row.Selected=true;break;}}UpdateActions();}
+    void UpdateActions() {
+        bool ready=requirements!=null&&requirements.All(r=>r.Ready);
+        var selected=list.SelectedItems.Count>0?(Requirement)list.SelectedItems[0].Tag:null;
+        check.Visible=!ready&&!complete;check.Enabled=!busy&&!complete;
+        download.Visible=!complete&&selected!=null&&!selected.Ready&&selected.Url!="";download.Enabled=!busy;
+        if(selected!=null&&selected.Url!="")download.Text=Common.T(selected.Key+"Download");
+        template.Visible=!complete&&selected!=null&&!selected.Ready&&selected.Key=="config";template.Enabled=!busy;
+        install.Enabled=!busy&&(complete||(ready&&!String.IsNullOrWhiteSpace(destination.Text)));
+        help.Text=complete?Common.T("complete"):ready?Common.T("installReady"):selected==null?Common.T("selectHelp"):Common.T(selected.Key+"Help");
+        int x=20;foreach(var button in new[]{check,download,template,about})if(button.Visible){button.Location=new Point(x,525);button.Width=button==about?120:220;x+=button.Width+8;}install.Location=new Point(685,525);
+    }
+    void Enable(bool enabled) {languages.Enabled=enabled;browse.Enabled=enabled;destination.Enabled=enabled&&!complete;about.Enabled=enabled;UpdateActions();}
     async Task Check() {
         if(busy)return;busy=true;Enable(false);install.Enabled=false;status.Text=Common.T("checking");
         try{requirements=await Task.Run(()=>Requirements.Check(Common.Root));Render();status.Text=Common.T(requirements.All(r=>r.Ready)?"installReady":"blocked");install.Enabled=requirements.All(r=>r.Ready);}
@@ -74,7 +85,18 @@ public sealed class Installer : Form {
         }
         Common.SaveJson(manifest,new{product="CastBridge",version=Common.Version,complete=true,files=files});
     }
-    public void Smoke(string report) {requirements=Requirements.Check(Common.Root);install.Enabled=requirements.All(r=>r.Ready);var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();using(var image=new Bitmap(Width,Height)){DrawToBitmap(image,new Rectangle(0,0,Width,Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}results.Add(new{language=Common.Language,title=Text,credit=credit.Text,button=install.Text,installEnabled=install.Enabled,checks=list.Items.Count});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});}
+    void VerifyActions() {
+        var saved=requirements;
+        try {
+            requirements=new List<Requirement>{new Requirement("python",false,"https://www.python.org/downloads/windows/")};Render();Application.DoEvents();
+            if(install.Enabled||!check.Visible||!download.Visible||template.Visible||download.Text!=Common.T("pythonDownload"))throw new InvalidOperationException("Missing Python action state failed");
+            requirements=new List<Requirement>{new Requirement("config",false)};Render();Application.DoEvents();
+            if(install.Enabled||!check.Visible||download.Visible||!template.Visible)throw new InvalidOperationException("Missing configuration action state failed");
+            requirements=new List<Requirement>{new Requirement("config",true)};Render();Application.DoEvents();
+            if(!install.Enabled||check.Visible||download.Visible||template.Visible)throw new InvalidOperationException("Ready installation action state failed");
+        }finally{requirements=saved;Render();}
+    }
+    public void Smoke(string report) {requirements=Requirements.Check(Common.Root);install.Enabled=requirements.All(r=>r.Ready);var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();VerifyActions();using(var image=new Bitmap(Width,Height)){DrawToBitmap(image,new Rectangle(0,0,Width,Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}results.Add(new{language=Common.Language,title=Text,credit=credit.Text,button=install.Text,installEnabled=install.Enabled,checks=list.Items.Count,actionStatesVerified=true});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});}
 }
 public static class SetupProgram {
     static void Uninstall(string root,bool interactive=true) {
@@ -114,7 +136,7 @@ public static class SetupProgram {
                 try{var result=Requirements.Check(Common.Root);if(!result.All(r=>r.Ready)){Common.SaveJson(args[2],new{installed=false,blocked=true,checks=result});return 2;}Installer.InstallFiles(target,"en",false);Common.SaveJson(args[2],new{installed=true,blocked=false,powershellUsed=false,registered=false});return 0;}
                 catch(Exception e){Common.SaveJson(args[2],new{installed=false,error=e.ToString()});return 1;}
             }
-            if(args.Length==2&&args[0]=="--smoke"){using(var test=new Installer())test.Smoke(args[1]);return 0;}
+            if(args.Length==2&&args[0]=="--smoke"){try{using(var test=new Installer(true)){test.Show();test.Smoke(args[1]);}return 0;}catch(Exception e){Common.SaveJson(args[1],new{success=false,error=e.ToString()});return 1;}}
             Application.Run(new Installer());return 0;
         }catch(Exception e){MessageBox.Show(e.Message,"CastBridge",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
     }
