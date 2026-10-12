@@ -11,7 +11,7 @@
 Extend your Windows desktop to a Chromecast.<br />
 **A production by [MateKraft](https://matekraft.tech).**
 
-[Download preview](https://github.com/akasha-code/CastBridge/releases) · [Installation guide](INSTALL.md) · [Report an issue](https://github.com/akasha-code/CastBridge/issues)
+[Download preview](docs/downloads.md) · [Installation guide](INSTALL.md) · [Report an issue](https://github.com/akasha-code/CastBridge/issues)
 
 </div>
 

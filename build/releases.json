@@ -1,0 +1,61 @@
+[
+  {
+    "tag": "v0.2.0-alpha.1",
+    "prerelease": true,
+    "publishedAt": "2026-10-12T17:57:48.0000000+00:00",
+    "url": "https://github.com/akasha-code/CastBridge/releases/tag/v0.2.0-alpha.1",
+    "assets": [
+      {
+        "name": "CastBridge-Setup.exe",
+        "bytes": 204288,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.1/CastBridge-Setup.exe"
+      },
+      {
+        "name": "CastBridge-Windows-x64-20261012-195546.zip",
+        "bytes": 103979,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.1/CastBridge-Windows-x64-20261012-195546.zip"
+      },
+      {
+        "name": "SHA256SUMS.txt",
+        "bytes": 197,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.2.0-alpha.1/SHA256SUMS.txt"
+      }
+    ]
+  },
+  {
+    "tag": "v0.1.0-alpha.2",
+    "prerelease": true,
+    "publishedAt": "2026-10-12T16:19:30.0000000+00:00",
+    "url": "https://github.com/akasha-code/CastBridge/releases/tag/v0.1.0-alpha.2",
+    "assets": [
+      {
+        "name": "CastBridge-Windows-x64-20261012-181854.zip",
+        "bytes": 56053,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.1.0-alpha.2/CastBridge-Windows-x64-20261012-181854.zip"
+      },
+      {
+        "name": "CastBridge-Windows-x64-20261012-181854.zip.sha256.txt",
+        "bytes": 110,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.1.0-alpha.2/CastBridge-Windows-x64-20261012-181854.zip.sha256.txt"
+      }
+    ]
+  },
+  {
+    "tag": "v0.1.0-alpha.1",
+    "prerelease": true,
+    "publishedAt": "2026-10-12T16:11:04.0000000+00:00",
+    "url": "https://github.com/akasha-code/CastBridge/releases/tag/v0.1.0-alpha.1",
+    "assets": [
+      {
+        "name": "CastAggregator-Windows-x64-20261012-180521.zip",
+        "bytes": 53854,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.1.0-alpha.1/CastAggregator-Windows-x64-20261012-180521.zip"
+      },
+      {
+        "name": "CastAggregator-Windows-x64-20261012-180521.zip.sha256.txt",
+        "bytes": 114,
+        "url": "https://github.com/akasha-code/CastBridge/releases/download/v0.1.0-alpha.1/CastAggregator-Windows-x64-20261012-180521.zip.sha256.txt"
+      }
+    ]
+  }
+]

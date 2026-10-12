@@ -11,7 +11,7 @@
 Utvid Windows-skrivebordet til en Chromecast.<br />
 **En produksjon fra [MateKraft](https://matekraft.tech).**
 
-[Last ned forhåndsversjon](https://github.com/akasha-code/CastBridge/releases) · [Installasjonsveiledning på engelsk](INSTALL.md) · [Rapporter et problem](https://github.com/akasha-code/CastBridge/issues)
+[Last ned forhåndsversjon](docs/downloads.no.md) · [Installasjonsveiledning på engelsk](INSTALL.md) · [Rapporter et problem](https://github.com/akasha-code/CastBridge/issues)
 
 </div>
 

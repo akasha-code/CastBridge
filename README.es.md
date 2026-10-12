@@ -11,7 +11,7 @@
 Extendé tu escritorio de Windows a un Chromecast.<br />
 **Una producción de [MateKraft](https://matekraft.tech).**
 
-[Descargar versión preliminar](https://github.com/akasha-code/CastBridge/releases) · [Guía de instalación en inglés](INSTALL.md) · [Informar un problema](https://github.com/akasha-code/CastBridge/issues)
+[Descargar versión preliminar](docs/downloads.es.md) · [Guía de instalación en inglés](INSTALL.md) · [Informar un problema](https://github.com/akasha-code/CastBridge/issues)
 
 </div>
 
