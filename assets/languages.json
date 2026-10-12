@@ -77,7 +77,10 @@
     "uninstallConfirm": "Remove CastBridge? Your preferences and logs will be kept. External prerequisites will not be removed.",
     "uninstalled": "CastBridge was removed. Preferences and logs remain in the installation folder.",
     "deviceFreeName": "No other active virtual display",
-    "deviceFreeHelp": "Disconnect any session using this driver. If a persistent virtual monitor was installed separately, review that setup before proceeding. Do not remove drivers or configuration used by another application without reviewing them."
+    "deviceFreeHelp": "Disconnect any session using this driver. If a persistent virtual monitor was installed separately, review that setup before proceeding. Do not remove drivers or configuration used by another application without reviewing them.",
+    "validationTitle": "Display verification",
+    "validationText": "CastBridge display verification. Move the pointer here, click the text, scroll with the mouse wheel and press Page Down. This is synthetic test content.",
+    "validationClock": "PC reference clock"
   },
   "nb": {
     "requirement": "Krav",
@@ -157,7 +160,10 @@
     "uninstallConfirm": "Vil du avinstallere CastBridge? Innstillinger og logger beholdes. Eksterne forutsetninger fjernes ikke.",
     "uninstalled": "CastBridge er avinstallert. Innstillinger og logger ligger fortsatt i installasjonsmappen.",
     "deviceFreeName": "Ingen annen aktiv virtuell skjerm",
-    "deviceFreeHelp": "Koble fra økter som bruker denne driveren. Hvis en permanent virtuell skjerm ble installert separat, kontroller det oppsettet før du fortsetter. Ikke fjern drivere eller konfigurasjon som tilhører andre programmer uten å kontrollere dem."
+    "deviceFreeHelp": "Koble fra økter som bruker denne driveren. Hvis en permanent virtuell skjerm ble installert separat, kontroller det oppsettet før du fortsetter. Ikke fjern drivere eller konfigurasjon som tilhører andre programmer uten å kontrollere dem.",
+    "validationTitle": "Skjermkontroll",
+    "validationText": "Skjermkontroll for CastBridge. Flytt pekeren hit, klikk på teksten, rull med musehjulet og trykk Page Down. Dette er syntetisk testinnhold.",
+    "validationClock": "Referanseklokke på PC-en"
   },
   "es": {
     "requirement": "Requisito",
@@ -237,6 +243,9 @@
     "uninstallConfirm": "¿Desinstalar CastBridge? Se conservarán tus preferencias y registros. No se retirarán los requisitos externos.",
     "uninstalled": "Se desinstaló CastBridge. Las preferencias y registros permanecen en la carpeta de instalación.",
     "deviceFreeName": "No hay otro monitor virtual activo",
-    "deviceFreeHelp": "Desconectá cualquier sesión que use este driver. Si se instaló un monitor virtual persistente por separado, revisá esa configuración antes de seguir. No retires a ciegas el driver o la configuración de otra aplicación."
+    "deviceFreeHelp": "Desconectá cualquier sesión que use este driver. Si se instaló un monitor virtual persistente por separado, revisá esa configuración antes de seguir. No retires a ciegas el driver o la configuración de otra aplicación.",
+    "validationTitle": "Verificación de pantalla",
+    "validationText": "Verificación de pantalla de CastBridge. Mové el cursor acá, hacé clic en el texto, desplazalo con la rueda y usá Página abajo. Este es contenido sintético de prueba.",
+    "validationClock": "Reloj de referencia de la PC"
   }
 }

@@ -29,10 +29,13 @@ Run the native checks and Python tests, inspect the payload, and record any miss
 
 ```powershell
 .\scripts\Test-Desktop.ps1
+.\scripts\Test-DesktopLifecycle.ps1
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
 Upload the installer and its SHA-256 checksum to a release for the tested commit. Do not replace an older release's files with a different build. Keep earlier versions available for troubleshooting.
+
+`scripts/Test-InstallerLifecycle.ps1 -PreviousInstaller <path>` exercises a previous release, upgrade and uninstall in a fresh guarded directory under `artifacts`. It refuses to replace an existing Windows registration. It verifies application-file ownership, Windows registration and retained user data. These developer tests do not replace a second-PC validation.
 
 ## Refresh the download page
 

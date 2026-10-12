@@ -54,11 +54,12 @@ public sealed class Installer : Form {
     }
     public static void InstallFiles(string target,string language,bool register=true) {
         target=Common.ValidateDestination(target);Common.EnsureNoLinks(target);
-        Directory.CreateDirectory(target);var files=new List<string>();
+        Directory.CreateDirectory(target);var files=new List<string>();string manifest=Path.Combine(target,"castbridge-install.json");
+        if(File.Exists(manifest)){var previous=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(manifest));if(Convert.ToString(previous["product"])!="CastBridge")throw new InvalidDataException("Unexpected installation manifest");foreach(object file in Common.Objects(previous["files"])){string name=Convert.ToString(file);Common.Under(target,name);files.Add(name);}}
         using(var stream=Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip"))using(var zip=new ZipArchive(stream,ZipArchiveMode.Read)) {
             // Validate every archive path before extracting any application file.
-            foreach(var entry in zip.Entries){Common.Under(target,entry.FullName);if(entry.FullName.EndsWith("/"))continue;files.Add(entry.FullName);}
-            Common.SaveJson(Path.Combine(target,"castbridge-install.json"),new{product="CastBridge",version="0.2.0-preview",complete=false,files=files});
+            foreach(var entry in zip.Entries){Common.Under(target,entry.FullName);if(entry.FullName.EndsWith("/"))continue;if(!files.Contains(entry.FullName,StringComparer.OrdinalIgnoreCase))files.Add(entry.FullName);}
+            Common.SaveJson(manifest,new{product="CastBridge",version=Common.Version,complete=false,files=files});
             foreach(var entry in zip.Entries){if(entry.FullName.EndsWith("/"))continue;string output=Common.Under(target,entry.FullName);Directory.CreateDirectory(Path.GetDirectoryName(output));using(var input=entry.Open())using(var file=File.Create(output))input.CopyTo(file);}
         }
         string py=Common.Find("py.exe")??Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows),"py.exe");string python=Path.Combine(target,".venv","Scripts","python.exe"),log=Path.Combine(target,"install.log");
@@ -69,25 +70,33 @@ public sealed class Installer : Form {
         File.Copy(Application.ExecutablePath,Path.Combine(target,"Uninstall.exe"),true);files.Add("Uninstall.exe");
         if(register) {
             Common.Shortcut(Path.Combine(target,"CastBridge.exe"),Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"MateKraft","CastBridge.lnk"));
-            using(var key=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MateKraft.CastBridge")){key.SetValue("DisplayName","CastBridge");key.SetValue("DisplayVersion","0.2.0-preview");key.SetValue("Publisher","MateKraft");key.SetValue("URLInfoAbout","https://matekraft.tech");key.SetValue("InstallLocation",target);key.SetValue("DisplayIcon",Path.Combine(target,"CastBridge.exe"));key.SetValue("UninstallString",Common.Quote(Path.Combine(target,"Uninstall.exe"))+" --uninstall");}
+            using(var key=Registry.CurrentUser.CreateSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MateKraft.CastBridge")){key.SetValue("DisplayName","CastBridge");key.SetValue("DisplayVersion",Common.Version);key.SetValue("Publisher","MateKraft");key.SetValue("URLInfoAbout","https://matekraft.tech");key.SetValue("InstallLocation",target);key.SetValue("DisplayIcon",Path.Combine(target,"CastBridge.exe"));key.SetValue("UninstallString",Common.Quote(Path.Combine(target,"Uninstall.exe"))+" --uninstall");}
         }
-        Common.SaveJson(Path.Combine(target,"castbridge-install.json"),new{product="CastBridge",version="0.2.0-preview",complete=true,files=files});
+        Common.SaveJson(manifest,new{product="CastBridge",version=Common.Version,complete=true,files=files});
     }
     public void Smoke(string report) {requirements=Requirements.Check(Common.Root);install.Enabled=requirements.All(r=>r.Ready);var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();using(var image=new Bitmap(Width,Height)){DrawToBitmap(image,new Rectangle(0,0,Width,Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}results.Add(new{language=Common.Language,title=Text,credit=credit.Text,button=install.Text,installEnabled=install.Enabled,checks=list.Items.Count});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});}
 }
 public static class SetupProgram {
-    static void Uninstall(string root) {
+    static void Uninstall(string root,bool interactive=true) {
         root=Common.ValidateDestination(root);Common.LoadSavedLanguage(root);
         if(Common.Active())throw new InvalidOperationException(Common.T("closedHelp"));
         string manifest=Common.Under(root,"castbridge-install.json");var data=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(manifest));if(Convert.ToString(data["product"])!="CastBridge")throw new InvalidDataException("Unexpected installation manifest");
-        if(MessageBox.Show(Common.T("uninstallConfirm"),"CastBridge",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
+        if(interactive && MessageBox.Show(Common.T("uninstallConfirm"),"CastBridge",MessageBoxButtons.YesNo,MessageBoxIcon.Question)!=DialogResult.Yes)return;
         var paths=Common.Objects(data["files"]).Select(item=>Common.Under(root,Convert.ToString(item))).ToArray();string venv=Common.Under(root,".venv");Common.EnsureNoLinks(root);
         foreach(string path in paths)if(File.Exists(path))File.Delete(path);if(Directory.Exists(venv))Directory.Delete(venv,true);File.Delete(manifest);
         bool registered=false;using(var key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MateKraft.CastBridge")){registered=key!=null&&String.Equals(Convert.ToString(key.GetValue("InstallLocation")),root,StringComparison.OrdinalIgnoreCase);}
         if(registered){string shortcut=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Programs),"MateKraft","CastBridge.lnk");if(File.Exists(shortcut))File.Delete(shortcut);Registry.CurrentUser.DeleteSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MateKraft.CastBridge",false);}
         Common.SaveJson(manifest,new{product="CastBridge",uninstalled=true,complete=false,files=new string[0]});
         // User preferences and diagnostic logs are intentionally retained.
-        MessageBox.Show(Common.T("uninstalled"),"CastBridge");
+        if(interactive)MessageBox.Show(Common.T("uninstalled"),"CastBridge");
+    }
+    static string ValidationTarget(string value) {
+        string target=Common.ValidateDestination(value);string prefix=Common.Root+Path.DirectorySeparatorChar+"release-validation-";
+        if(!target.StartsWith(prefix,StringComparison.OrdinalIgnoreCase))throw new InvalidDataException("Validation target must be an isolated release-validation directory beside this test installer");
+        Guid token;if(!Guid.TryParseExact(target.Substring(prefix.Length),"N",out token))throw new InvalidDataException("Invalid validation directory token");
+        string marker=Common.Under(target,".castbridge-validation.json");var data=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(marker));if(Convert.ToString(data["token"])!=token.ToString("N"))throw new InvalidDataException("Validation marker mismatch");
+        using(var key=Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Uninstall\MateKraft.CastBridge")){if(key!=null&&!String.Equals(Convert.ToString(key.GetValue("InstallLocation")),target,StringComparison.OrdinalIgnoreCase))throw new InvalidOperationException("Another registered installation exists; refusing to alter it");}
+        return target;
     }
     [STAThread] public static int Main(string[] args) {
         try {
@@ -95,6 +104,11 @@ public static class SetupProgram {
             if(args.Length==1&&args[0]=="--uninstall"){string copy=Path.Combine(Path.GetTempPath(),"CastBridge-Uninstall-"+Guid.NewGuid().ToString("N")+".exe");File.Copy(Application.ExecutablePath,copy);Process.Start(copy,"--remove "+Common.Quote(Common.Root));return 0;}
             if(args.Length==2&&args[0]=="--remove"){Uninstall(Path.GetFullPath(args[1]));return 0;}
             if(args.Length==2&&args[0]=="--check"){var result=Requirements.Check(Common.Root);Common.SaveJson(args[1],new{ready=result.All(r=>r.Ready),checks=result,diagnostics=Requirements.Diagnostics});return 0;}
+            if(args.Length==3&&(args[0]=="--upgrade-test"||args[0]=="--uninstall-test")) {
+                try{string target=ValidationTarget(args[1]);if(args[0]=="--upgrade-test"){var result=Requirements.Check(Common.Root);if(!result.All(r=>r.Ready)){Common.SaveJson(args[2],new{success=false,blocked=true,checks=result});return 2;}Common.LoadSavedLanguage(target);Installer.InstallFiles(target,Common.Language);}
+                    else Uninstall(target,false);Common.SaveJson(args[2],new{success=true,operation=args[0],version=Common.Version});return 0;}
+                catch(Exception e){Common.SaveJson(args[2],new{success=false,error=e.ToString()});return 1;}
+            }
             if(args.Length==3&&args[0]=="--install-test") {
                 string target=Path.GetFullPath(args[1]);if(Directory.Exists(target))throw new InvalidOperationException("Integration test requires a new destination");
                 try{var result=Requirements.Check(Common.Root);if(!result.All(r=>r.Ready)){Common.SaveJson(args[2],new{installed=false,blocked=true,checks=result});return 2;}Installer.InstallFiles(target,"en",false);Common.SaveJson(args[2],new{installed=true,blocked=false,powershellUsed=false,registered=false});return 0;}

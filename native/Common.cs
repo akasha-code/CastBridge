@@ -16,6 +16,7 @@ using System.Windows.Forms;
 
 namespace CastBridge {
 public static class Common {
+    public const string Version="0.2.0-alpha.2";
     public static JavaScriptSerializer Json { get { return new JavaScriptSerializer(); } }
     public static readonly string Root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
     public static string Language = "en";

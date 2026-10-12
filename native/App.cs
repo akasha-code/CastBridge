@@ -14,6 +14,8 @@ using System.Windows.Forms;
 [assembly: AssemblyProduct("CastBridge")]
 [assembly: AssemblyCompany("MateKraft")]
 [assembly: AssemblyVersion("0.2.0.0")]
+[assembly: AssemblyFileVersion("0.2.0.1")]
+[assembly: AssemblyInformationalVersion("0.2.0-alpha.2")]
 namespace CastBridge {
 public class Desktop : ApplicationContext {
     readonly string root=Common.Root, prefs=Path.Combine(Common.Root,"artifacts","preferences.json"), settings=Path.Combine(Common.Root,"artifacts","ui-settings.json");
@@ -24,7 +26,9 @@ public class Desktop : ApplicationContext {
     Dictionary<string,object> selected; Task sessionTask; bool exiting,busy,failed; string session, state="disconnected";
     List<ToolStripMenuItem> profiles=new List<ToolStripMenuItem>(); int profile;
     readonly bool smoke;
-    string integrationReport;DateTime integrationDeadline;DateTime? connectedAt;
+    bool resourcesDisposed;
+    string integrationReport;DateTime integrationDeadline;DateTime? connectedAt;int integrationHold=8;
+    Form referenceWindow,clockWindow;Label referenceClock;RichTextBox referenceText;System.Windows.Forms.Timer clockTimer;bool observedScroll,observedKeyboard;
     public Desktop(bool test) {
         smoke=test;
         Directory.CreateDirectory(Path.Combine(root,"artifacts"));
@@ -90,7 +94,19 @@ public class Desktop : ApplicationContext {
         sessionTask=Task.Run(()=>Session(id,name,latency));RefreshText();
     }
     public void ConnectNow() {Connect();}
-    public void BeginIntegration(string report) {if(selected==null)throw new InvalidOperationException("Integration requires an already selected receiver");integrationReport=report;integrationDeadline=DateTime.UtcNow.AddSeconds(150);Connect();}
+    public void BeginIntegration(string report,int hold=8) {if(selected==null)throw new InvalidOperationException("Integration requires an already selected receiver");if(hold<8||hold>600)throw new ArgumentOutOfRangeException("hold");integrationHold=hold;integrationReport=report;integrationDeadline=DateTime.UtcNow.AddSeconds(hold+150);Connect();}
+    void OpenReference(Dictionary<string,object> data,Dictionary<string,object> row) {
+        var bounds=(Dictionary<string,object>)((Dictionary<string,object>)data["bounds"])[Convert.ToString(row["source"])];int x=Convert.ToInt32(bounds["x"]),y=Convert.ToInt32(bounds["y"]);
+        referenceWindow=new Form {Text="CastBridge — "+Common.T("validationTitle"),StartPosition=FormStartPosition.Manual,Location=new Point(x+35,y+35),Size=new Size(1200,630),Icon=Common.Icon()};
+        referenceClock=new Label {Dock=DockStyle.Top,Height=65,Font=new Font("Segoe UI",30,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft};
+        referenceText=new RichTextBox {Dock=DockStyle.Fill,ReadOnly=true,Font=new Font("Segoe UI",26),ScrollBars=RichTextBoxScrollBars.Vertical};
+        referenceText.Text=String.Join(Environment.NewLine+Environment.NewLine,Enumerable.Range(1,90).Select(n=>n+". "+Common.T("validationText")));
+        referenceText.MouseWheel+=delegate{observedScroll=true;};referenceText.KeyDown+=delegate(object sender,KeyEventArgs e){if(e.KeyCode==Keys.PageDown||e.KeyCode==Keys.PageUp)observedKeyboard=true;};
+        referenceWindow.Controls.Add(referenceText);referenceWindow.Controls.Add(referenceClock);referenceWindow.Show();
+        clockWindow=new Form {Text="CastBridge — "+Common.T("validationClock"),StartPosition=FormStartPosition.Manual,Location=new Point(Screen.PrimaryScreen.Bounds.X+25,Screen.PrimaryScreen.Bounds.Y+25),ClientSize=new Size(370,75),Icon=Common.Icon()};
+        var clock=new Label {Dock=DockStyle.Fill,Font=new Font("Segoe UI",30,FontStyle.Bold),TextAlign=ContentAlignment.MiddleCenter};clockWindow.Controls.Add(clock);clockWindow.Show();
+        clockTimer=new System.Windows.Forms.Timer {Interval=100};clockTimer.Tick+=delegate{string value=DateTime.Now.ToString("HH:mm:ss.ff");clock.Text=value;if(referenceWindow!=null&&!referenceWindow.IsDisposed)referenceClock.Text=value;};clockTimer.Start();
+    }
     void Session(string id,string name,int latency) {
         string python=Path.Combine(root,".venv","Scripts","python.exe"),baseline=Path.Combine(session,"monitor-cast-baseline.json"),log=Path.Combine(session,"monitor-cast.log"),target=null;
         NativeSoftwareDisplay display=null;var errors=new List<string>();bool restored=false,closed=false;Exception failure=null;
@@ -101,6 +117,7 @@ public class Desktop : ApplicationContext {
             run(new[]{"-m","prototype.display_session","snapshot",baseline});display=new NativeSoftwareDisplay(Path.Combine(root,"artifacts","castaggregator-device.dll"));Thread.Sleep(3000);
             run(new[]{"-m","prototype.display_session","extend",baseline,"--layout-file",Path.Combine(root,"artifacts","display-layout.json"),"--display-id",id});
             string active=Path.Combine(session,"monitor-cast-active.json");run(new[]{"-m","prototype.display_session","snapshot",active});var data=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(active));var targets=Common.Objects(data["topology"]).Cast<Dictionary<string,object>>().Where(r=>Convert.ToString(r["target_path"]).Contains("#MTT1337#")).ToArray();if(targets.Length!=1)throw new InvalidOperationException("Cannot attribute virtual target");target=Convert.ToString(targets[0]["target_path"]);
+            if(integrationReport!=null && integrationHold>8)home.Invoke(new Action(()=>OpenReference(data,targets[0])));
             var args=new List<string>{"-u","-m","prototype.cast","--capture-target",target,"--seconds","86400","--device-id",id,"--display-name",name,"--stop-file",Path.Combine(session,"stop"),"--sync-file",Path.Combine(session,"sync")};if(latency>0)args.Add("--low-latency");if(latency==2)args.Add("--aggressive-latency");run(args.ToArray());
         }catch(Exception e){failure=e;Log(e);}
         finally {
@@ -115,15 +132,15 @@ public class Desktop : ApplicationContext {
     void Tick() {
         try{
             if(sessionTask==null)return;
-            if(sessionTask.IsCompleted){bool faulted=sessionTask.IsFaulted;Exception error=sessionTask.Exception;sessionTask=null;state=faulted?"error":"disconnected";failed=faulted;RefreshText();if(integrationReport!=null){Common.SaveJson(integrationReport,new{success=!faulted,cleanup=Common.Json.DeserializeObject(File.ReadAllText(Path.Combine(session,"monitor-cast-result.json")))});exiting=true;ExitThread();return;}if(faulted){exiting=false;Problem("cleanupFailed",error);}else if(exiting)ExitThread();}
+            if(sessionTask.IsCompleted){bool faulted=sessionTask.IsFaulted;Exception error=sessionTask.Exception;sessionTask=null;state=faulted?"error":"disconnected";failed=faulted;RefreshText();if(integrationReport!=null){bool recovered=referenceWindow!=null&&!referenceWindow.IsDisposed&&Screen.PrimaryScreen.Bounds.Contains(referenceWindow.Location);Common.SaveJson(integrationReport,new{success=!faulted,connected=connectedAt.HasValue,referenceRecovered=recovered,scrollObserved=observedScroll,pageKeyObserved=observedKeyboard,cleanup=Common.Json.DeserializeObject(File.ReadAllText(Path.Combine(session,"monitor-cast-result.json")))});exiting=true;ExitThread();return;}if(faulted){exiting=false;Problem("cleanupFailed",error);}else if(exiting)ExitThread();}
             else if(state=="connecting"){string log=Path.Combine(session,"monitor-cast.log");if(File.Exists(log)&&File.ReadAllText(log).Contains("\"receiver_confirmed\": \"PLAYING\"")){state="connected";RefreshText();}}
-            if(integrationReport!=null&&sessionTask!=null&&state!="disconnecting") {if(state=="connected"&&!connectedAt.HasValue)connectedAt=DateTime.UtcNow;if((connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(8))||DateTime.UtcNow>integrationDeadline)Stop();}
+            if(integrationReport!=null&&sessionTask!=null&&state!="disconnecting") {if(state=="connected"&&!connectedAt.HasValue)connectedAt=DateTime.UtcNow;if((connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(integrationHold))||DateTime.UtcNow>integrationDeadline)Stop();}
         }catch(Exception e){Log(e);Problem("operationFailed");}
     }
     public static Form AboutForm() {
         var form=new Form {Text=Common.T("about"),ClientSize=new Size(520,310),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon(),Font=new Font("Segoe UI",10),BackColor=Color.FromArgb(10,20,18),ForeColor=Color.FromArgb(247,242,228)};
         var title=new Label {Text="CastBridge",Font=new Font("Segoe UI",23,FontStyle.Bold),Location=new Point(25,15),AutoSize=true};
-        var body=new Label {Text=Common.T("credit")+Environment.NewLine+Environment.NewLine+Common.T("aboutText")+Environment.NewLine+Environment.NewLine+Common.T("version")+" 0.2.0-preview",Location=new Point(25,65),Size=new Size(470,135)};
+        var body=new Label {Text=Common.T("credit")+Environment.NewLine+Environment.NewLine+Common.T("aboutText")+Environment.NewLine+Environment.NewLine+Common.T("version")+" "+Common.Version,Location=new Point(25,65),Size=new Size(470,135)};
         var website=new LinkLabel {Text=Common.T("website"),Location=new Point(25,210),AutoSize=true,LinkColor=Color.FromArgb(212,175,55)};website.LinkClicked+=delegate{Process.Start("https://matekraft.tech");};
         var source=new LinkLabel {Text=Common.T("source"),Location=new Point(25,240),AutoSize=true,LinkColor=Color.FromArgb(212,175,55)};source.LinkClicked+=delegate{Process.Start("https://github.com/akasha-code/CastBridge");};
         var close=new Button {Text=Common.T("close"),DialogResult=DialogResult.OK,Location=new Point(380,260),ForeColor=Color.FromArgb(10,20,18),BackColor=Color.FromArgb(247,242,228)};form.Controls.AddRange(new Control[]{title,body,website,source,close});return form;
@@ -132,7 +149,15 @@ public class Desktop : ApplicationContext {
     public void Smoke(string report) {
         var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();using(var dialog=AboutForm()){dialog.Show();Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}dialog.Close();}results.Add(new{language=Common.Language,status=status.Text,connect=connect.Text,about=about.Text,credit=credit.Text,menuItems=menu.Items.Count});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});
     }
-    protected override void Dispose(bool disposing){if(disposing){timer.Stop();timer.Dispose();tray.Visible=false;tray.Icon.Dispose();tray.Dispose();menu.Dispose();home.Dispose();}base.Dispose(disposing);}
+    protected override void Dispose(bool disposing) {
+        // ApplicationContext and its owner may both dispose the context at exit.
+        if(disposing && !resourcesDisposed) {
+            resourcesDisposed=true;timer.Stop();timer.Dispose();tray.Visible=false;
+            if(clockTimer!=null){clockTimer.Stop();clockTimer.Dispose();}if(referenceWindow!=null)referenceWindow.Dispose();if(clockWindow!=null)clockWindow.Dispose();
+            var icon=tray.Icon;tray.Dispose();if(icon!=null)icon.Dispose();menu.Dispose();home.Dispose();
+        }
+        base.Dispose(disposing);
+    }
 }
 public static class Program {
     [STAThread] public static int Main(string[] args) {
@@ -142,7 +167,7 @@ public static class Program {
             using(var mutex=new Mutex(false,"Local\\CastAggregatorTray")) {
                 bool acquired=false;try{acquired=mutex.WaitOne(args.Contains("--connect")?10000:0);}catch(AbandonedMutexException){acquired=true;}
                 if(!acquired){MessageBox.Show(Common.T("alreadyOpen"),"CastBridge");return 1;}
-                try{using(var context=new Desktop(false)){if(args.Length==2&&args[0]=="--integration-session")context.BeginIntegration(args[1]);else if(args.Contains("--connect"))context.ConnectNow();Application.Run(context);}}finally{mutex.ReleaseMutex();}
+                try{using(var context=new Desktop(false)){if((args.Length==2||args.Length==3)&&args[0]=="--integration-session")context.BeginIntegration(args[1],args.Length==3?Int32.Parse(args[2]):8);else if(args.Contains("--connect"))context.ConnectNow();Application.Run(context);}}finally{mutex.ReleaseMutex();}
             }return 0;
         }catch(Exception e){MessageBox.Show(e.Message,"CastBridge",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
     }
