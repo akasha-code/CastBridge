@@ -1,14 +1,15 @@
-$ErrorActionPreference='Stop'
+﻿$ErrorActionPreference='Stop'
 $root=Split-Path $PSScriptRoot -Parent
+& (Join-Path $PSScriptRoot 'Build-Desktop.ps1')
 $stage=Join-Path $root ('artifacts\package-'+[Guid]::NewGuid().ToString('N'))
 New-Item -ItemType Directory -Path $stage | Out-Null
-foreach ($name in @('assets','prototype','scripts','artifacts','driver')) { New-Item -ItemType Directory -Path (Join-Path $stage $name) | Out-Null }
-foreach ($name in @('CastBridge.cmd','Install-CastBridge.cmd','CastAggregator.cmd','Install-CastAggregator.cmd','README.md','INSTALL.md','requirements-prototype.lock.txt')) { Copy-Item -LiteralPath (Join-Path $root $name) -Destination $stage }
+foreach ($name in @('assets','prototype','artifacts','driver')) {New-Item -ItemType Directory -Path (Join-Path $stage $name) | Out-Null}
+foreach ($name in @('CastBridge.exe','README.md','README.es.md','README.no.md','INSTALL.md','requirements-prototype.lock.txt')) {Copy-Item -LiteralPath (Join-Path $root $name) -Destination $stage}
 Get-ChildItem (Join-Path $root 'prototype') -Filter '*.py' -File | Copy-Item -Destination (Join-Path $stage 'prototype')
-foreach ($name in @('Start-CastAggregator.ps1','Test-MonitorCast.ps1','NativeSoftwareDisplay.cs','Reference-Window.ps1','Setup-Local.ps1','New-Shortcut.ps1','Test-Prerequisites.ps1','Install-Wizard.ps1')) { Copy-Item -LiteralPath (Join-Path $root ('scripts\'+$name)) -Destination (Join-Path $stage 'scripts') }
-Copy-Item -LiteralPath (Join-Path $root 'assets\castaggregator.ico') -Destination (Join-Path $stage 'assets')
+foreach ($name in @('castbridge.ico','castbridge.png','castbridge-banner.svg','languages.json')) {Copy-Item -LiteralPath (Join-Path $root ('assets\'+$name)) -Destination (Join-Path $stage 'assets')}
 Copy-Item -LiteralPath (Join-Path $root 'artifacts\castaggregator-device.dll') -Destination (Join-Path $stage 'artifacts')
 Copy-Item -LiteralPath (Join-Path $root 'driver\vdd_settings.xml') -Destination (Join-Path $stage 'driver')
 $zip=Join-Path $root ('artifacts\CastBridge-Windows-x64-'+(Get-Date -Format 'yyyyMMdd-HHmmss')+'.zip')
 Compress-Archive -Path (Join-Path $stage '*') -DestinationPath $zip
-Get-FileHash -LiteralPath $zip | Select-Object Path,Hash
+& (Join-Path $PSScriptRoot 'Build-Desktop.ps1') -Payload $zip
+Get-FileHash -LiteralPath $zip,(Join-Path $root 'artifacts\CastBridge-Setup.exe') | Select-Object Path,Hash

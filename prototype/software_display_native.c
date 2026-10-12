@@ -54,7 +54,7 @@ __declspec(dllexport) HRESULT WINAPI CastAggregatorCreate(const WCHAR *instance,
     if (!context->completed) { HRESULT hr = HRESULT_FROM_WIN32(GetLastError()); Release(context); return hr; }
     CreateInfo info = {0};
     info.size = sizeof(info); info.instance = instance; info.hardware = L"MttVDD\0";
-    info.capabilities = 9; info.description = L"CastAggregator temporary virtual display";
+    info.capabilities = 9; info.description = L"CastBridge temporary virtual display";
     *stage = 2;
     HRESULT hr = create(L"CastAggregator", L"HTREE\\ROOT\\0", &info, 0, NULL, OnCreated, context, &context->device);
     if (FAILED(hr)) { Release(context); return hr; }

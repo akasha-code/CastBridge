@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="320" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">CastBridge — A MateKraft production</title>
+  <desc id="desc">A gold bridge connects two screens against a deep green background.</desc>
+  <rect width="1200" height="320" rx="24" fill="#0a1412"/>
+  <path d="M85 150a65 65 0 0 1 130 0" fill="none" stroke="#d4af37" stroke-width="16"/>
+  <g fill="#0a1412" stroke="#d4af37" stroke-width="8"><rect x="47" y="145" width="76" height="58" rx="3"/><rect x="176" y="145" width="76" height="58" rx="3"/></g>
+  <path d="M85 207v19m129-19v19M62 231h46m83 0h46" fill="none" stroke="#f7f2e4" stroke-width="7"/>
+  <g font-family="Segoe UI, Arial, sans-serif"><text x="320" y="105" font-size="17" fill="#d4af37" letter-spacing="4">MATEKRAFT / CASTBRIDGE</text><text x="316" y="182" font-size="67" font-weight="700" fill="#f7f2e4">More room for your work.</text><text x="320" y="233" font-size="23" fill="#c6cfc9">Extend your Windows desktop to a Chromecast.</text></g>
+  <path d="M320 266h800" stroke="#d4af37" stroke-opacity=".35"/>
+</svg>

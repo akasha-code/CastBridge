@@ -1,20 +1,44 @@
-﻿# Llevar CastBridge a otra PC
+# Install CastBridge
 
-**Una producción de MateKraft.**
+[English](README.md) · [Español](README.es.md) · [Norsk](README.no.md)
 
-El ZIP incluye un asistente de instalación con comprobación previa de dependencias externas. No es un MSI ni un ejecutable firmado. La compatibilidad real se verificó sólo en el equipo de desarrollo con Windows 11 x64. Requiere permisos de administrador para activar el monitor.
+A production by [MateKraft](https://matekraft.tech).
 
-1. Extraé todo el ZIP en una carpeta local con permiso de escritura. No copies la `.venv` de otra PC.
-2. Instalá Python 3.12 x64 con el lanzador `py` y FFmpeg. Podés colocar `ffmpeg.exe` en una subcarpeta `bin` del paquete o tenerlo en PATH. No se redistribuyen esas herramientas en el ZIP.
-3. Descargá el paquete de controlador firmado Virtual Display Driver 25.7.23 desde su [release oficial](https://github.com/VirtualDrivers/Virtual-Display-Driver/releases/tag/25.7.23). Comprobá las firmas CAT/DLL: deben ser válidas. Para esta aplicación se agrega el INF al Driver Store con `pnputil /add-driver "RUTA_AL_PAQUETE\MttVDD.inf"` en PowerShell elevado, **sin `/install` y sin crear un dispositivo ROOT adicional**. El coordinador crea su propio dispositivo temporal. Si ya instalaste un monitor persistente del mismo driver, la aplicación lo rechazará: revisá esa instalación antes de seguir. No uses los scripts históricos del proyecto ni desactives protecciones para aceptar un paquete inválido.
-4. Copiá la plantilla `driver\vdd_settings.xml` del ZIP a `C:\VirtualDisplayDriver\vdd_settings.xml`, creando esa carpeta en PowerShell elevado si no existe. No sobrescribas una configuración ajena: conservá una copia y revisala primero. La plantilla configura un monitor de 1280×720 a 60 Hz y cursor por software. La existencia del XML no demuestra que el driver esté instalado correctamente.
-5. Abrí `Install-CastBridge.cmd`. Primero verifica todos los requisitos y bloquea Instalar si falta alguno; seleccioná una fila para obtener ayuda y enlaces. Una vez resueltos, pulsá Comprobar e Instalar. Como alternativa de consola, ejecutá `powershell -NoProfile -File .\scripts\Setup-Local.ps1`; `-CheckOnly` comprueba sin instalar. Crea la `.venv` local e instala las dependencias Python fijadas. Necesita Internet para descargar paquetes; no modifica firewall ni instala el driver.
-6. Abrí `CastBridge.lnk` (creado localmente con el icono propio) o `CastBridge.cmd`, aceptá la elevación de Windows y elegí el Chromecast. Ambas máquinas deben estar en la misma LAN. La red y el firewall deben permitir descubrimiento y acceso al flujo; la aplicación no abre reglas automáticamente. El atajo contiene rutas de esa PC: si movés la carpeta, volvé a ejecutar `scripts/New-Shortcut.ps1`.
+## Open the installer
 
-El helper x64 ya está compilado en el ZIP; no necesitás GCC para usarlo. No se incluyen preferencias, posiciones de monitores, logs, direcciones de dispositivos ni grabaciones del equipo de desarrollo. La PC nueva genera sus propias preferencias y ubicación.
+Download `CastBridge-Setup.exe` from the latest preview release. Choose English, Spanish or Norwegian Bokmål. Prerequisite checks and guidance are translated. **Install remains disabled until every check passes**, and checks are repeated before installation.
 
-Probá conectar y desconectar antes de usar contenido importante. Este paquete no fue validado todavía en una segunda PC. Conserva los límites del prototipo: latencia variable, HTTP sin cifrado y pruebas pendientes de suspensión/cortes de red.
+Windows 11 x64 and its .NET Framework runtime are required to open the executable. This preview is not digitally signed yet. Do not disable Windows protections to accept a file you have not verified.
 
-Para retirar la aplicación: desconectá, salí desde la bandeja y eliminá su carpeta. Python, FFmpeg y el driver se desinstalan por separado con sus procedimientos oficiales; borrar la carpeta no los desinstala. No reutilices un número `oemXX.inf` de otra PC.
+## Prepare external tools
 
-Si Windows bloquea scripts descargados, revisá el origen y el contenido del paquete antes de usar la opción Desbloquear en sus propiedades. El asistente no cambia la política de ejecución ni desactiva protecciones. La instalación descarga dependencias: una interrupción puede dejar un entorno parcial; no anuncia éxito ni crea el atajo hasta que pip check termina correctamente. Podés corregir el problema y repetir el asistente.
+1. **Python:** install Python 3.12 x64 from the official Python Windows downloads, including the `py` launcher. Reopen the installer afterwards.
+2. **FFmpeg:** use a Windows build with `gdigrab`, `libx264` and HLS output. Add its `bin` directory to PATH and reopen the installer. CastBridge does not change PATH.
+3. **Driver:** download and extract signed Virtual Display Driver **25.7.23** from its official release. In an administrator **Command Prompt**, run `pnputil /add-driver "FULL_PATH\MttVDD.inf"`. Do not add `/install` or create another persistent ROOT device. Keep signature verification enabled. CastBridge creates its own temporary device when connecting.
+4. **Configuration:** use **Save configuration template** in the installer. Copy that XML to `C:\VirtualDisplayDriver\vdd_settings.xml` with administrator permission. Review and back up any existing configuration instead of overwriting settings used by another application. The template configures one 1280 × 720 monitor at 60 Hz with a software cursor.
+5. **Network:** allow HTTPS access to `pypi.org` and `files.pythonhosted.org` for dependency downloads. The installer does not modify proxy, firewall or certificate settings.
+6. **Sessions:** disconnect and exit CastBridge before installation or an update. Review any persistent virtual display using the same driver; the application rejects concurrent sessions.
+
+The installer checks the driver's expected version in Driver Store and valid CAT/DLL signatures. An XML file alone is not proof that the driver is installed.
+
+## Installation
+
+Choose a new folder or an existing CastBridge installation. The default is `%LOCALAPPDATA%\Programs\CastBridge`. Files are copied only after the prerequisites pass. The installer creates a local Python environment, downloads the pinned dependencies and runs `pip check` before reporting success.
+
+A complete installation creates a **MateKraft / CastBridge** Start-menu shortcut and an entry in Windows **Installed apps**. The installer language becomes the initial application language and can be changed later. The application does not register itself to start with Windows.
+
+Administrator permission is requested when activating the temporary display. The PC and receiver must be reachable on the local network; receiver connectivity is checked when connecting.
+
+## Interrupted installation
+
+A failed download can leave a partial environment. The installer reports failure and retains the log. Correct the issue and retry in the same owned installation folder. Success is not announced until dependency checks pass.
+
+## Uninstall
+
+Disconnect, wait for cleanup and exit. Uninstall through Windows **Installed apps**. Application files and the owned Python environment are removed. Preferences and diagnostic logs remain in the installation folder. Python, FFmpeg and the driver remain installed separately.
+
+Do not reuse another PC's `oemXX.inf` package number. Driver removal is a separate administrator operation.
+
+## Validation
+
+Hardware streaming was tested on the development PC. A full installation and streaming session on another PC remain pending. The compiled interface replaces the PowerShell interface; transport and cleanup need regression validation. Suspend/resume, network interruption and forced closure remain experimental boundaries.

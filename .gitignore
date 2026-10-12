@@ -2,6 +2,7 @@
 __pycache__/
 artifacts/
 session-state/
+/*.exe
 bin/
 *.lnk
 .env
