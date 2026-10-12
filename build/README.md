@@ -52,3 +52,5 @@ The latest preview and latest stable release are selected separately from their 
 ## License files in release payloads
 
 New payloads include LICENSE, NOTICE, TRADEMARKS.md, THIRD_PARTY_NOTICES.md and third_party/licenses/. Keep upstream texts intact and review obligations before bundling external tools. Existing release assets are not replaced silently.
+
+[MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

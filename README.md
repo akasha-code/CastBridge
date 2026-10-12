@@ -13,6 +13,8 @@ Extend your Windows desktop to a Chromecast.<br />
 
 [Download preview](docs/downloads.md) · [Installation guide](INSTALL.md) · [Report an issue](https://github.com/akasha-code/CastBridge/issues)
 
+[matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+
 </div>
 
 ## What it does

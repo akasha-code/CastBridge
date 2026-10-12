@@ -13,6 +13,8 @@ Utvid Windows-skrivebordet til en Chromecast.<br />
 
 [Last ned forhåndsversjon](docs/downloads.no.md) · [Installasjonsveiledning på engelsk](INSTALL.md) · [Rapporter et problem](https://github.com/akasha-code/CastBridge/issues)
 
+[matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+
 </div>
 
 ## Hva programmet gjør

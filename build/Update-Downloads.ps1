@@ -46,7 +46,7 @@ $preview=@($releases|Where-Object {$_.prerelease}|Select-Object -First 1)
 $stable=@($releases|Where-Object {-not $_.prerelease}|Select-Object -First 1)
 foreach($code in @('en','es','nb')) {
     $text=$locale[$code];$lines=[Collections.Generic.List[string]]::new()
-    $lines.Add('[English](downloads.md) · [Español](downloads.es.md) · [Norsk](downloads.no.md)');$lines.Add('');$lines.Add('![CastBridge — MateKraft](../assets/castbridge-banner.svg)');$lines.Add('');$lines.Add('# '+$text.title);$lines.Add('');$lines.Add('**'+$text.credit+' · [matekraft.tech](https://matekraft.tech)**');$lines.Add('');$lines.Add('> '+$text.private);$lines.Add('')
+    $lines.Add('[English](downloads.md) · [Español](downloads.es.md) · [Norsk](downloads.no.md)');$lines.Add('');$lines.Add('![CastBridge — MateKraft](../assets/castbridge-banner.svg)');$lines.Add('');$lines.Add('# '+$text.title);$lines.Add('');$lines.Add('**'+$text.credit+' · [matekraft.tech](https://matekraft.tech)**');$lines.Add('');$lines.Add('[Buy me a coffee](https://www.buymeacoffee.com/matekraft)');$lines.Add('');$lines.Add('> '+$text.private);$lines.Add('')
     $lines.Add('## '+$text.preview);$lines.Add('');if($preview.Count){Add-Release $lines $preview[0] $text}else{$lines.Add($text.noPreview);$lines.Add('')}
     $lines.Add('## '+$text.stable);$lines.Add('');if($stable.Count){Add-Release $lines $stable[0] $text}else{$lines.Add($text.noStable);$lines.Add('')}
     $lines.Add('## '+$text.older);$lines.Add('');$selected=@($preview.tag_name)+@($stable.tag_name);foreach($release in $releases){if($release.tag_name -notin $selected){Add-Release $lines $release $text}}

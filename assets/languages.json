@@ -83,7 +83,11 @@
     "validationClock": "PC reference clock",
     "pythonDownload": "Download Python",
     "ffmpegDownload": "Download FFmpeg",
-    "driverDownload": "Download display driver"
+    "driverDownload": "Download display driver",
+    "coffee": "Buy me a coffee",
+    "discoveryProgress": "Searching… {0} s (up to 30 s)",
+    "devicesFound": "Devices found: {0}",
+    "discoveryTimeout": "Search timed out. Try again."
   },
   "nb": {
     "requirement": "Krav",
@@ -169,7 +173,11 @@
     "validationClock": "Referanseklokke på PC-en",
     "pythonDownload": "Last ned Python",
     "ffmpegDownload": "Last ned FFmpeg",
-    "driverDownload": "Last ned skjermdriver"
+    "driverDownload": "Last ned skjermdriver",
+    "coffee": "Spander en kaffe",
+    "discoveryProgress": "Søker… {0} s (opptil 30 s)",
+    "devicesFound": "Enheter funnet: {0}",
+    "discoveryTimeout": "Søket tok for lang tid. Prøv igjen."
   },
   "es": {
     "requirement": "Requisito",
@@ -255,6 +263,10 @@
     "validationClock": "Reloj de referencia de la PC",
     "pythonDownload": "Descargar Python",
     "ffmpegDownload": "Descargar FFmpeg",
-    "driverDownload": "Descargar driver de pantalla"
+    "driverDownload": "Descargar driver de pantalla",
+    "coffee": "Invitame un café",
+    "discoveryProgress": "Buscando… {0} s (hasta 30 s)",
+    "devicesFound": "Dispositivos encontrados: {0}",
+    "discoveryTimeout": "La búsqueda agotó el tiempo. Reintentá."
   }
 }

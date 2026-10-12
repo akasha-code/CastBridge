@@ -14,14 +14,16 @@ using System.Windows.Forms;
 [assembly: AssemblyProduct("CastBridge")]
 [assembly: AssemblyCompany("MateKraft")]
 [assembly: AssemblyVersion("0.2.0.0")]
-[assembly: AssemblyFileVersion("0.2.0.2")]
-[assembly: AssemblyInformationalVersion("0.2.0-alpha.3")]
+[assembly: AssemblyFileVersion("0.2.0.3")]
+[assembly: AssemblyInformationalVersion("0.2.0-alpha.4")]
 namespace CastBridge {
 public class Desktop : ApplicationContext {
     readonly string root=Common.Root, prefs=Path.Combine(Common.Root,"artifacts","preferences.json"), settings=Path.Combine(Common.Root,"artifacts","ui-settings.json");
     readonly NotifyIcon tray; readonly ContextMenuStrip menu=new ContextMenuStrip(); readonly Form home=new Form();
     readonly Label status=new Label(), credit=new Label(), selectedLabel=new Label(), hint=new Label();
     readonly Button connect=new Button(), disconnect=new Button(), choose=new Button(), about=new Button();
+    readonly ProgressBar discoveryProgress=new ProgressBar();readonly LinkLabel websiteLink=Common.BrandLink(false,new Point(25,350)),coffeeLink=Common.BrandLink(true,new Point(310,350));
+    DateTime discoveryStarted;string discoveryMessage;int discoveredCount;
     readonly ComboBox languages; readonly System.Windows.Forms.Timer timer=new System.Windows.Forms.Timer();
     Dictionary<string,object> selected; Task sessionTask; bool exiting,busy,failed; string session, state="disconnected";
     List<ToolStripMenuItem> profiles=new List<ToolStripMenuItem>(); int profile;
@@ -36,7 +38,7 @@ public class Desktop : ApplicationContext {
         if(File.Exists(prefs)) {try{selected=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(prefs));}catch(Exception e){Log(e);failed=true;}}
         profile=selected!=null && selected.ContainsKey("aggressiveLatency") && Convert.ToBoolean(selected["aggressiveLatency"])?2:selected!=null && selected.ContainsKey("lowLatency") && Convert.ToBoolean(selected["lowLatency"])?1:0;
         tray=new NotifyIcon {Icon=Common.Icon(),ContextMenuStrip=menu,Visible=!test};tray.DoubleClick+=delegate{home.Show();home.Activate();};
-        home.Text="CastBridge — MateKraft";home.ClientSize=new Size(600,360);home.StartPosition=FormStartPosition.CenterScreen;home.Icon=Common.Icon();home.BackColor=Color.FromArgb(10,20,18);home.ForeColor=Color.FromArgb(247,242,228);home.Font=new Font("Segoe UI",10);
+        home.Text="CastBridge — MateKraft";home.ClientSize=new Size(600,390);home.StartPosition=FormStartPosition.CenterScreen;home.Icon=Common.Icon();home.BackColor=Color.FromArgb(10,20,18);home.ForeColor=Color.FromArgb(247,242,228);home.Font=new Font("Segoe UI",10);
         var picture=new PictureBox {Image=tray.Icon.ToBitmap(),SizeMode=PictureBoxSizeMode.Zoom,Location=new Point(25,25),Size=new Size(64,64)};
         var title=new Label {Text="CastBridge",Font=new Font("Segoe UI",23,FontStyle.Bold),Location=new Point(110,20),AutoSize=true};
         credit.Location=new Point(112,64);credit.Size=new Size(450,30);credit.ForeColor=Color.FromArgb(212,175,55);
@@ -45,7 +47,8 @@ public class Desktop : ApplicationContext {
         Button[] buttons={choose,connect,disconnect,about};for(int i=0;i<buttons.Length;i++){buttons[i].Location=new Point(25+i*140,210);buttons[i].Size=new Size(130,38);buttons[i].ForeColor=Color.FromArgb(10,20,18);buttons[i].BackColor=Color.FromArgb(247,242,228);}
         hint.Location=new Point(25,270);hint.Size=new Size(545,60);
         choose.Click+=delegate{Discover();};connect.Click+=delegate{Connect();};disconnect.Click+=delegate{Stop();};about.Click+=delegate{About(home);};
-        home.Controls.AddRange(new Control[]{picture,title,credit,languages,status,selectedLabel,choose,connect,disconnect,about,hint});
+        discoveryProgress.Location=new Point(25,190);discoveryProgress.Size=new Size(545,10);discoveryProgress.Style=ProgressBarStyle.Marquee;discoveryProgress.MarqueeAnimationSpeed=30;discoveryProgress.Visible=false;
+        home.Controls.AddRange(new Control[]{picture,title,credit,languages,status,selectedLabel,choose,connect,disconnect,about,hint,discoveryProgress,websiteLink,coffeeLink});
         home.FormClosing+=delegate(object sender,FormClosingEventArgs e){if(!smoke && (!exiting||sessionTask!=null)){e.Cancel=true;if(!exiting)home.Hide();}};
         timer.Interval=500;timer.Tick+=delegate{Tick();};RefreshText();if(!test){timer.Start();home.Show();}
     }
@@ -55,7 +58,8 @@ public class Desktop : ApplicationContext {
     void Save() {Common.SaveJson(prefs,selected);}
     void Item(string key,Action action,bool enabled=true) {var item=new ToolStripMenuItem(Common.T(key));item.Enabled=enabled;item.Click+=delegate{action();};menu.Items.Add(item);}
     public void RefreshText() {
-        credit.Text=Common.T("credit");status.Text=Common.T(state);selectedLabel.Text=Name();hint.Text=Common.T("profileHint")+Environment.NewLine+Common.T("restoreWarning");
+        credit.Text=Common.T("credit");status.Text=Common.T(state);selectedLabel.Text=Name();hint.Text=Common.T("profileHint")+Environment.NewLine+Common.T("restoreWarning");coffeeLink.Text=Common.T("coffee");
+        discoveryProgress.Visible=state=="discovering";home.UseWaitCursor=state=="discovering";UpdateDiscoveryFeedback();
         choose.Text=Common.T("select");connect.Text=Common.T("connect");disconnect.Text=Common.T("disconnect");about.Text=Common.T("about");
         bool active=sessionTask!=null;choose.Enabled=!active && !busy;connect.Enabled=!active && !busy && selected!=null && !failed;disconnect.Enabled=active && state!="disconnecting";
         tray.Text="CastBridge — MateKraft: "+Common.T(state);
@@ -65,24 +69,26 @@ public class Desktop : ApplicationContext {
         string[] keys={"stable","reduced","minimum"};for(int i=0;i<keys.Length;i++){int captured=i;var item=new ToolStripMenuItem(Common.T(keys[i])){Checked=profile==i};item.Click+=delegate{profile=captured;selected["lowLatency"]=profile>0;selected["aggressiveLatency"]=profile==2;Save();RefreshText();};latency.DropDownItems.Add(item);profiles.Add(item);}menu.Items.Add(latency);
         var language=new ToolStripMenuItem(Common.T("language"));string[] labels={"English","Español","Norsk (bokmål)"};for(int i=0;i<labels.Length;i++){int captured=i;var item=new ToolStripMenuItem(labels[i]){Checked=languages.SelectedIndex==i};item.Click+=delegate{languages.SelectedIndex=captured;};language.DropDownItems.Add(item);}menu.Items.Add(language);
         Item("connect",()=>Connect(),connect.Enabled);Item("disconnect",()=>Stop(),disconnect.Enabled);Item("sync",()=>File.WriteAllText(Path.Combine(session,"sync"),"sync"),active&&state=="connected");
-        Item("about",()=>About(home));Item("exit",()=>{exiting=true;if(active){home.Show();Stop();}else ExitThread();});
+        Item("about",()=>About(home));Item("website",()=>Process.Start(Common.Website));Item("coffee",()=>Process.Start(Common.Coffee));Item("exit",()=>{exiting=true;if(active){home.Show();Stop();}else ExitThread();},!busy);
     }
+    void UpdateDiscoveryFeedback() {if(state=="discovering")status.Text=String.Format(Common.T("discoveryProgress"),(int)(DateTime.UtcNow-discoveryStarted).TotalSeconds);else if(state=="disconnected"&&discoveryMessage!=null)status.Text=discoveryMessage=="devicesFound"?String.Format(Common.T(discoveryMessage),discoveredCount):Common.T(discoveryMessage);}
     void Rename() {using(var dialog=new Form {Text=Common.T("screenTitle"),ClientSize=new Size(440,110),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon()}){var text=new TextBox {Text=Name(),MaxLength=80,Location=new Point(15,15),Width=410};var save=new Button {Text=Common.T("save"),DialogResult=DialogResult.OK,Location=new Point(310,60)};dialog.Controls.AddRange(new Control[]{text,save});dialog.AcceptButton=save;if(dialog.ShowDialog(home)==DialogResult.OK && !String.IsNullOrWhiteSpace(text.Text)){selected["displayName"]=text.Text.Trim();Save();RefreshText();}}}
     async void Discover() {
-        if(busy || sessionTask!=null)return;busy=true;state="discovering";RefreshText();
+        if(busy || sessionTask!=null)return;busy=true;discoveryStarted=DateTime.UtcNow;discoveryMessage=null;state="discovering";RefreshText();
         try {
-            string python=Path.Combine(root,".venv","Scripts","python.exe");if(!File.Exists(python)){Problem("missing");return;}
+            string python=Path.Combine(root,".venv","Scripts","python.exe");if(!File.Exists(python)){discoveryMessage="missing";Problem("missing");return;}
             string output=await Task.Run(()=>Common.Run(python,new[]{"-m","prototype.discover","--selectable"},root,30000));
-            var data=Common.Json.Deserialize<Dictionary<string,object>>(output);var devices=Common.Objects(data["devices"]);if(devices.Length==0){Problem("noDevices");return;}
+            var data=Common.Json.Deserialize<Dictionary<string,object>>(output);var devices=Common.Objects(data["devices"]);discoveredCount=devices.Length;discoveryMessage=devices.Length==0?"noDevices":"devicesFound";state="disconnected";RefreshText();if(devices.Length==0){Problem("noDevices");return;}
             using(var dialog=new Form {Text=Common.T("choose"),ClientSize=new Size(440,130),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon()}) {
                 var list=new ComboBox {DropDownStyle=ComboBoxStyle.DropDownList,Location=new Point(15,20),Width=410};foreach(var device in devices){var row=(Dictionary<string,object>)device;list.Items.Add(row["name"]+" ("+row["model"]+")");}list.SelectedIndex=0;
                 var save=new Button {Text=Common.T("save"),DialogResult=DialogResult.OK,Location=new Point(310,75)};dialog.Controls.AddRange(new Control[]{list,save});dialog.AcceptButton=save;
                 if(dialog.ShowDialog(home)==DialogResult.OK){var row=(Dictionary<string,object>)devices[list.SelectedIndex];string id=Convert.ToString(row["id"]);Guid.Parse(id);string name=selected!=null && Convert.ToString(selected["id"])==id?Name():Convert.ToString(row["name"]);selected=new Dictionary<string,object>{{"id",id},{"name",row["name"]},{"model",row["model"]},{"displayName",name},{"lowLatency",profile>0},{"aggressiveLatency",profile==2}};Save();failed=false;}
             }
-        }catch(Exception e){Problem("discoveryFailed",e);}finally{busy=false;state="disconnected";RefreshText();}
+        }catch(TimeoutException e){discoveryMessage="discoveryTimeout";Problem("discoveryTimeout",e);}catch(Exception e){discoveryMessage="discoveryFailed";Problem("discoveryFailed",e);}finally{busy=false;state="disconnected";RefreshText();}
     }
     void Connect() {
         if(busy||sessionTask!=null||selected==null||failed)return;
+        discoveryMessage=null;
         if(!File.Exists(Path.Combine(root,".venv","Scripts","python.exe"))||!File.Exists(Path.Combine(root,"artifacts","castaggregator-device.dll"))){Problem("missing");return;}
         if(!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator)) {
             try{Process.Start(new ProcessStartInfo(Application.ExecutablePath,"--connect"){UseShellExecute=true,Verb="runas"});exiting=true;ExitThread();}
@@ -131,6 +137,7 @@ public class Desktop : ApplicationContext {
     void Stop() {if(sessionTask!=null){File.WriteAllText(Path.Combine(session,"stop"),"stop");state="disconnecting";RefreshText();}}
     void Tick() {
         try{
+            UpdateDiscoveryFeedback();
             if(sessionTask==null)return;
             if(sessionTask.IsCompleted){bool faulted=sessionTask.IsFaulted;Exception error=sessionTask.Exception;sessionTask=null;state=faulted?"error":"disconnected";failed=faulted;RefreshText();if(integrationReport!=null){bool recovered=referenceWindow!=null&&!referenceWindow.IsDisposed&&Screen.PrimaryScreen.Bounds.Contains(referenceWindow.Location);Common.SaveJson(integrationReport,new{success=!faulted,connected=connectedAt.HasValue,referenceRecovered=recovered,scrollObserved=observedScroll,pageKeyObserved=observedKeyboard,cleanup=Common.Json.DeserializeObject(File.ReadAllText(Path.Combine(session,"monitor-cast-result.json")))});exiting=true;ExitThread();return;}if(faulted){exiting=false;Problem("cleanupFailed",error);}else if(exiting)ExitThread();}
             else if(state=="connecting"){string log=Path.Combine(session,"monitor-cast.log");if(File.Exists(log)&&File.ReadAllText(log).Contains("\"receiver_confirmed\": \"PLAYING\"")){state="connected";RefreshText();}}
@@ -138,15 +145,20 @@ public class Desktop : ApplicationContext {
         }catch(Exception e){Log(e);Problem("operationFailed");}
     }
     public static Form AboutForm() {
-        var form=new Form {Text=Common.T("about"),ClientSize=new Size(520,310),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon(),Font=new Font("Segoe UI",10),BackColor=Color.FromArgb(10,20,18),ForeColor=Color.FromArgb(247,242,228)};
+        var form=new Form {Text=Common.T("about"),ClientSize=new Size(520,350),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon(),Font=new Font("Segoe UI",10),BackColor=Color.FromArgb(10,20,18),ForeColor=Color.FromArgb(247,242,228)};
         var title=new Label {Text="CastBridge",Font=new Font("Segoe UI",23,FontStyle.Bold),Location=new Point(25,15),AutoSize=true};
         var body=new Label {Text=Common.T("credit")+Environment.NewLine+Environment.NewLine+Common.T("aboutText")+Environment.NewLine+Environment.NewLine+Common.T("version")+" "+Common.Version,Location=new Point(25,65),Size=new Size(470,135)};
-        var website=new LinkLabel {Text=Common.T("website"),Location=new Point(25,210),AutoSize=true,LinkColor=Color.FromArgb(212,175,55)};website.LinkClicked+=delegate{Process.Start("https://matekraft.tech");};
+        var website=Common.BrandLink(false,new Point(25,210));var coffee=Common.BrandLink(true,new Point(25,275));
         var source=new LinkLabel {Text=Common.T("source"),Location=new Point(25,240),AutoSize=true,LinkColor=Color.FromArgb(212,175,55)};source.LinkClicked+=delegate{Process.Start("https://github.com/akasha-code/CastBridge");};
-        var close=new Button {Text=Common.T("close"),DialogResult=DialogResult.OK,Location=new Point(380,260),ForeColor=Color.FromArgb(10,20,18),BackColor=Color.FromArgb(247,242,228)};form.Controls.AddRange(new Control[]{title,body,website,source,close});return form;
+        var close=new Button {Text=Common.T("close"),DialogResult=DialogResult.OK,Location=new Point(380,310),ForeColor=Color.FromArgb(10,20,18),BackColor=Color.FromArgb(247,242,228)};form.Controls.AddRange(new Control[]{title,body,website,source,coffee,close});return form;
     }
     public static void About(Form owner) {using(var dialog=AboutForm())dialog.ShowDialog(owner);}
     public void Smoke(string report) {
+        home.Show();state="discovering";busy=true;discoveryStarted=DateTime.UtcNow.AddSeconds(-3);RefreshText();Application.DoEvents();
+        if(!discoveryProgress.Visible||!home.UseWaitCursor||choose.Enabled||!status.Text.Contains("3"))throw new InvalidOperationException("Discovery activity feedback failed");
+        state="disconnected";busy=false;discoveryMessage="devicesFound";discoveredCount=2;RefreshText();
+        if(discoveryProgress.Visible||home.UseWaitCursor||!choose.Enabled||!status.Text.Contains("2"))throw new InvalidOperationException("Discovery completion feedback failed");
+        discoveryMessage="discoveryTimeout";RefreshText();if(status.Text!=Common.T("discoveryTimeout"))throw new InvalidOperationException("Discovery timeout feedback failed");discoveryMessage=null;
         var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();using(var dialog=AboutForm()){dialog.Show();Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}dialog.Close();}results.Add(new{language=Common.Language,status=status.Text,connect=connect.Text,about=about.Text,credit=credit.Text,menuItems=menu.Items.Count});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});
     }
     protected override void Dispose(bool disposing) {

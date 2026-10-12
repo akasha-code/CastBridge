@@ -18,3 +18,5 @@ These results apply to the Windows 11 x64 development PC. They do not establish 
 - Suspend/resume, network interruption and forced-closure recovery.
 
 The repository and downloads remain private. Releases remain prereleases while these limits are being evaluated.
+
+[MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

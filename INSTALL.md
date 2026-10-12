@@ -42,3 +42,5 @@ Do not reuse another PC's `oemXX.inf` package number. Driver removal is a separa
 ## Validation
 
 The compiled interface was tested with a live Chromecast session on the development PC: cursor, mouse-wheel and Page Down controls worked, the reference window returned to the primary screen, and the physical display configuration was restored. Isolated installation, upgrade and uninstall checks passed on the same PC. See the [validation record](docs/validation.md) for evidence and limits. A full installation and streaming session on another PC remain pending. Suspend/resume, network interruption and forced closure remain experimental boundaries.
+
+[MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

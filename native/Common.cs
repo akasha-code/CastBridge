@@ -16,7 +16,9 @@ using System.Windows.Forms;
 
 namespace CastBridge {
 public static class Common {
-    public const string Version="0.2.0-alpha.3";
+    public const string Version="0.2.0-alpha.4";
+    public const string Website="https://matekraft.tech", Coffee="https://www.buymeacoffee.com/matekraft";
+    public static LinkLabel BrandLink(bool coffee,Point location) {var link=new LinkLabel {Text=coffee?T("coffee"):"matekraft.tech",Location=location,AutoSize=true,LinkColor=Color.FromArgb(212,175,55),VisitedLinkColor=Color.FromArgb(212,175,55)};link.LinkClicked+=delegate{Process.Start(coffee?Coffee:Website);};return link;}
     public static JavaScriptSerializer Json { get { return new JavaScriptSerializer(); } }
     public static readonly string Root = AppDomain.CurrentDomain.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar);
     public static string Language = "en";
