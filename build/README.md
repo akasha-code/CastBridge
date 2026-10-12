@@ -30,6 +30,8 @@ Run the native checks and Python tests, inspect the payload, and record any miss
 ```powershell
 .\scripts\Test-Desktop.ps1
 .\scripts\Test-DesktopLifecycle.ps1
+.\scripts\Test-DriverConfiguration.ps1
+.\scripts\Test-PowerResume.ps1
 .\.venv\Scripts\python.exe -m unittest discover -s tests -v
 ```
 
@@ -53,4 +55,6 @@ The latest preview and latest stable release are selected separately from their 
 
 New payloads include LICENSE, NOTICE, TRADEMARKS.md, THIRD_PARTY_NOTICES.md and third_party/licenses/. Keep upstream texts intact and review obligations before bundling external tools. Existing release assets are not replaced silently.
 
-[MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+See [publisher signing](../docs/signing.md) for the signing order and identity requirements. No paid signing service has been provisioned.
+
+[MateKraft â€” matekraft.tech](https://matekraft.tech) Â· [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

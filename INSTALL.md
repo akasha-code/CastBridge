@@ -15,7 +15,7 @@ Windows 11 x64 and its .NET Framework runtime are required to open the executabl
 1. **Python:** install Python 3.12 x64 from the official Python Windows downloads, including the `py` launcher. Reopen the installer afterwards.
 2. **FFmpeg:** use a Windows build with `gdigrab`, `libx264` and HLS output. Add its `bin` directory to PATH and reopen the installer. CastBridge does not change PATH.
 3. **Driver:** download and extract signed Virtual Display Driver **25.7.23** from its official release. In an administrator **Command Prompt**, run `pnputil /add-driver "FULL_PATH\MttVDD.inf"`. Do not add `/install` or create another persistent ROOT device. Keep signature verification enabled. CastBridge creates its own temporary device when connecting.
-4. **Configuration:** use **Save display configuration** in the installer. Copy that XML to `C:\VirtualDisplayDriver\vdd_settings.xml` with administrator permission. Review and back up any existing configuration instead of overwriting settings used by another application. The template configures one 1280 × 720 monitor at 60 Hz with a software cursor.
+4. **Configuration:** select **Configure virtual display** when this requirement is missing. Review the change and accept the Windows administrator prompt. The installer applies the XML directly and preserves an existing file as a uniquely named `.bak` file in `C:\VirtualDisplayDriver`. It refuses to change configuration while CastBridge or this driver is in use. This configures one 1280 × 720 monitor at 60 Hz with a software cursor. Other applications using this driver may be affected; restore the backup while disconnected if you need to roll back.
 5. **Network:** allow HTTPS access to `pypi.org` and `files.pythonhosted.org` for dependency downloads. The installer does not modify proxy, firewall or certificate settings.
 6. **Sessions:** disconnect and exit CastBridge before installation or an update. Review any persistent virtual display using the same driver; the application rejects concurrent sessions.
 
@@ -43,4 +43,4 @@ Do not reuse another PC's `oemXX.inf` package number. Driver removal is a separa
 
 The compiled interface was tested with a live Chromecast session on the development PC: cursor, mouse-wheel and Page Down controls worked, the reference window returned to the primary screen, and the physical display configuration was restored. Isolated installation, upgrade and uninstall checks passed on the same PC. See the [validation record](docs/validation.md) for evidence and limits. A full installation and streaming session on another PC remain pending. Suspend/resume, network interruption and forced closure remain experimental boundaries.
 
-[MateKraft � matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+[MateKraft — matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)

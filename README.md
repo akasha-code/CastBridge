@@ -13,7 +13,7 @@ Extend your Windows desktop to a Chromecast.<br />
 
 [Download preview](docs/downloads.md) · [Installation guide](INSTALL.md) · [Report an issue](https://github.com/akasha-code/CastBridge/issues)
 
-[matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+[matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
 </div>
 
@@ -25,6 +25,7 @@ CastBridge creates a temporary 1280 × 720 monitor and streams that desktop to y
 - Remember the virtual monitor position for each receiver.
 - Switch between English, Spanish and Norwegian Bokmål; your choice is saved.
 - Choose Stable, Reduced or Minimum experimental latency profiles.
+- After locking or suspending an active session, return to a ten-second reconnect popup for the previous receiver. Connect now, cancel, or let the countdown finish.
 - Find the version, project and MateKraft website in **About CastBridge**.
 
 ## Install

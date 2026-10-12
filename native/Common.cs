@@ -15,8 +15,24 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 namespace CastBridge {
+public sealed class DisplayPowerNotifications : NativeWindow,IDisposable {
+    public static readonly Guid DisplayState=new Guid("2B84C20E-AD23-4DDF-93DB-05FFBD7EFCA5"),Presence=new Guid("3C0F4548-C03F-4C4D-B9F2-237EDE686376");
+    [DllImport("user32.dll",SetLastError=true)]static extern IntPtr RegisterPowerSettingNotification(IntPtr handle,ref Guid setting,uint flags);
+    [DllImport("user32.dll")]static extern bool UnregisterPowerSettingNotification(IntPtr registration);
+    [DllImport("wtsapi32.dll",SetLastError=true)]static extern bool WTSRegisterSessionNotification(IntPtr handle,uint flags);
+    [DllImport("wtsapi32.dll")]static extern bool WTSUnRegisterSessionNotification(IntPtr handle);
+    readonly List<IntPtr> registrations=new List<IntPtr>();readonly Action<Guid,int> changed;readonly Action<bool> sessionChanged;bool sessionRegistered;
+    public DisplayPowerNotifications(IntPtr window,Action<Guid,int> callback,Action<bool> sessionCallback) {changed=callback;sessionChanged=sessionCallback;AssignHandle(window);try{foreach(Guid value in new[]{DisplayState,Presence}){Guid setting=value;IntPtr registration=RegisterPowerSettingNotification(window,ref setting,0);if(registration==IntPtr.Zero)throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());registrations.Add(registration);}if(!WTSRegisterSessionNotification(window,0))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());sessionRegistered=true;}catch{Dispose();throw;}}
+    protected override void WndProc(ref Message message) {if(message.Msg==0x218&&message.WParam.ToInt64()==0x8013&&message.LParam!=IntPtr.Zero){Guid setting=(Guid)Marshal.PtrToStructure(message.LParam,typeof(Guid));if((setting==DisplayState||setting==Presence)&&Marshal.ReadInt32(message.LParam,16)==4)changed(setting,Marshal.ReadInt32(message.LParam,20));}if(message.Msg==0x2b1&&(message.WParam.ToInt64()==7||message.WParam.ToInt64()==8))sessionChanged(message.WParam.ToInt64()==7);base.WndProc(ref message);}
+    public void Dispose() {if(sessionRegistered){WTSUnRegisterSessionNotification(Handle);sessionRegistered=false;}foreach(IntPtr registration in registrations)UnregisterPowerSettingNotification(registration);registrations.Clear();ReleaseHandle();}
+}
 public static class Common {
-    public const string Version="0.2.0-alpha.4";
+    [DllImport("kernel32.dll")]static extern ulong GetTickCount64();
+    [DllImport("kernel32.dll",SetLastError=true)]static extern bool QueryUnbiasedInterruptTime(out ulong time);
+    static ulong previousElapsed,previousAwake;static bool sampledPower;
+    public static bool SleptBetween(ulong elapsedMilliseconds,ulong awakeTicks) {return elapsedMilliseconds>awakeTicks/10000+2000;}
+    public static bool ResumedFromSleep() {ulong awake;if(!QueryUnbiasedInterruptTime(out awake))throw new System.ComponentModel.Win32Exception(Marshal.GetLastWin32Error());ulong elapsed=GetTickCount64();bool resumed=sampledPower&&SleptBetween(elapsed-previousElapsed,awake-previousAwake);previousElapsed=elapsed;previousAwake=awake;sampledPower=true;return resumed;}
+    public const string Version="0.2.0-alpha.5";
     public const string Website="https://matekraft.tech", Coffee="https://www.buymeacoffee.com/matekraft";
     public static LinkLabel BrandLink(bool coffee,Point location) {var link=new LinkLabel {Text=coffee?T("coffee"):"matekraft.tech",Location=location,AutoSize=true,LinkColor=Color.FromArgb(212,175,55),VisitedLinkColor=Color.FromArgb(212,175,55)};link.LinkClicked+=delegate{Process.Start(coffee?Coffee:Website);};return link;}
     public static JavaScriptSerializer Json { get { return new JavaScriptSerializer(); } }
@@ -120,6 +136,7 @@ public sealed class Requirement {
     public Requirement(string key,bool ready,string url="") {Key=key;Ready=ready;Url=url;}
 }
 public static class Requirements {
+    public static bool DeviceFree() {using(var query=new ManagementObjectSearcher("SELECT HardwareID FROM Win32_PnPEntity"))foreach(ManagementObject row in query.Get()){using(row){var ids=row["HardwareID"] as string[];if(ids!=null&&ids.Any(id=>String.Equals(id,"MttVDD",StringComparison.OrdinalIgnoreCase)||String.Equals(id,@"Root\MttVDD",StringComparison.OrdinalIgnoreCase)))return false;}}return true;}
     [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] struct VersionInfo { public uint Size,Major,Minor,Build,Platform; [MarshalAs(UnmanagedType.ByValTStr,SizeConst=128)] public string ServicePack; }
     [DllImport("ntdll.dll")] static extern int RtlGetVersion(ref VersionInfo info);
     [StructLayout(LayoutKind.Sequential,CharSet=CharSet.Unicode)] class TrustFile {public uint Size=(uint)Marshal.SizeOf(typeof(TrustFile));public string Path;public IntPtr Handle=IntPtr.Zero,Known=IntPtr.Zero;}
@@ -147,7 +164,7 @@ public static class Requirements {
         result.Add(new Requirement("config",config));
         result.Add(new Requirement("network",Try(()=>{ServicePointManager.SecurityProtocol=SecurityProtocolType.Tls12;var request=(HttpWebRequest)WebRequest.Create("https://pypi.org/pypi/PyChromecast/14.0.10/json");request.Timeout=8000;using(var response=request.GetResponse())using(var reader=new StreamReader(response.GetResponseStream())){var data=Common.Json.Deserialize<Dictionary<string,object>>(reader.ReadToEnd());var urls=Common.Objects(data["urls"]);var uri=new Uri(Convert.ToString(((Dictionary<string,object>)urls[0])["url"]));if(uri.Scheme!="https" || uri.Host!="files.pythonhosted.org")return false;var download=(HttpWebRequest)WebRequest.Create(uri);download.Method="HEAD";download.Timeout=8000;using(var check=download.GetResponse())return true;}})));
         result.Add(new Requirement("closed",!Common.Active()));
-        bool free=Try(()=>{using(var query=new ManagementObjectSearcher("SELECT HardwareID FROM Win32_PnPEntity"))foreach(ManagementObject row in query.Get()){using(row){var ids=row["HardwareID"] as string[];if(ids!=null && ids.Any(id=>String.Equals(id,"MttVDD",StringComparison.OrdinalIgnoreCase)||String.Equals(id,@"Root\MttVDD",StringComparison.OrdinalIgnoreCase)))return false;}}return true;});
+        bool free=Try(DeviceFree);
         result.Add(new Requirement("deviceFree",free));
         return result;
     }

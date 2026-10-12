@@ -13,7 +13,7 @@ Extendé tu escritorio de Windows a un Chromecast.<br />
 
 [Descargar versión preliminar](docs/downloads.es.md) · [Guía de instalación en inglés](INSTALL.md) · [Informar un problema](https://github.com/akasha-code/CastBridge/issues)
 
-[matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+[matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
 </div>
 
@@ -25,6 +25,7 @@ CastBridge crea un monitor temporal de 1280 × 720 y transmite ese escritorio al
 - Conservá la posición del monitor virtual para cada receptor.
 - Elegí español, inglés o noruego bokmål; el idioma queda guardado.
 - Usá los perfiles de latencia Estable, Reducido o Mínimo experimental.
+- Al volver de bloquear o suspender una sesión activa, aparece una ventana de reconexión al dispositivo anterior con diez segundos de espera. Podés conectar ahora, cancelar o dejar terminar la cuenta.
 - Encontrá la versión, el proyecto y el sitio de MateKraft en **Acerca de CastBridge**.
 
 ## Instalación

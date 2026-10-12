@@ -13,7 +13,7 @@ Utvid Windows-skrivebordet til en Chromecast.<br />
 
 [Last ned forhåndsversjon](docs/downloads.no.md) · [Installasjonsveiledning på engelsk](INSTALL.md) · [Rapporter et problem](https://github.com/akasha-code/CastBridge/issues)
 
-[matekraft.tech](https://matekraft.tech) � [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
+[matekraft.tech](https://matekraft.tech) · [Buy me a coffee](https://www.buymeacoffee.com/matekraft)
 
 </div>
 
@@ -25,6 +25,7 @@ CastBridge oppretter en midlertidig skjerm på 1280 × 720 og sender dette skriv
 - Behold plasseringen av den virtuelle skjermen for hver mottaker.
 - Velg engelsk, spansk eller norsk bokmål; språkvalget lagres.
 - Velg Stabil, Redusert eller Minimum eksperimentell forsinkelsesprofil.
+- Etter låsing eller hvilemodus viser en avbrutt aktiv økt et tilkoblingsvindu med ti sekunders nedtelling. Koble til samme mottaker nå, avbryt eller la tiden løpe ut.
 - Finn versjonen, prosjektet og MateKrafts nettsted under **Om CastBridge**.
 
 ## Installasjon

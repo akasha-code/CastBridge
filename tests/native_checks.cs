@@ -19,6 +19,7 @@ public static class NativeChecks {
         string temporary=Path.Combine(source,"artifacts","locale-test-"+Guid.NewGuid().ToString("N"));string settings=Path.Combine(temporary,"artifacts","ui-settings.json");
         foreach(string code in new[]{"es","nb","en"}){Common.SaveJson(settings,new{language=code});Common.Language="en";Common.LoadSavedLanguage(temporary);if(Common.Language!=code)throw new Exception("Saved language was not restored");}
         string shortcut=Path.Combine(temporary,"CastBridge.lnk");Common.Shortcut(Path.Combine(source,"CastBridge.exe"),shortcut);if(!File.Exists(shortcut))throw new Exception("Native shortcut creation failed");
-        Console.WriteLine("Native checks passed: language persistence, JSON arrays, process arguments, archive boundaries and shortcut creation.");return 0;
+        if(!Common.SleptBetween(10000,5000UL*10000)||Common.SleptBetween(10000,10000UL*10000))throw new Exception("Sleep detection confuses awake UI delays with suspension");
+        Console.WriteLine("Native checks passed: language persistence, JSON arrays, process arguments, archive boundaries, shortcut creation and sleep detection.");return 0;
     }
 }

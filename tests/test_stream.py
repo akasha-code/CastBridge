@@ -10,6 +10,21 @@ from prototype.stream import MemoryStream
 
 
 class StreamTests(unittest.TestCase):
+    def test_encoder_termination_releases_stream_resources(self):
+        stream = MemoryStream().start()
+        url = stream.url
+        encoder = stream.process
+        try:
+            encoder.kill()
+            encoder.wait(timeout=5)
+        finally:
+            stream.close()
+        self.assertIsNone(stream.process)
+        self.assertFalse(stream.data)
+        self.assertFalse(stream.threads)
+        with self.assertRaises(OSError):
+            urllib.request.urlopen(url, timeout=1)
+
     def test_synthetic_hls_and_cleanup(self):
         stream = MemoryStream()
         with stream:

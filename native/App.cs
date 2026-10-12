@@ -10,18 +10,20 @@ using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using Microsoft.Win32;
 [assembly: AssemblyTitle("CastBridge")]
 [assembly: AssemblyProduct("CastBridge")]
 [assembly: AssemblyCompany("MateKraft")]
 [assembly: AssemblyVersion("0.2.0.0")]
-[assembly: AssemblyFileVersion("0.2.0.3")]
-[assembly: AssemblyInformationalVersion("0.2.0-alpha.4")]
+[assembly: AssemblyFileVersion("0.2.0.4")]
+[assembly: AssemblyInformationalVersion("0.2.0-alpha.5")]
 namespace CastBridge {
 public class Desktop : ApplicationContext {
     readonly string root=Common.Root, prefs=Path.Combine(Common.Root,"artifacts","preferences.json"), settings=Path.Combine(Common.Root,"artifacts","ui-settings.json");
     readonly NotifyIcon tray; readonly ContextMenuStrip menu=new ContextMenuStrip(); readonly Form home=new Form();
     readonly Label status=new Label(), credit=new Label(), selectedLabel=new Label(), hint=new Label();
     readonly Button connect=new Button(), disconnect=new Button(), choose=new Button(), about=new Button();
+    readonly Button cancelResume=new Button();bool resumeWanted,resumeDetected,resumeEligible,userPresent=true,sessionLocked;Form resumeDialog;Label resumeCounter;DateTime? reconnectAt,displayWakeAt;DisplayPowerNotifications displayPower;bool integrationResume;int resumeAttempts;readonly List<object> integrationCleanups=new List<object>();
     readonly ProgressBar discoveryProgress=new ProgressBar();readonly LinkLabel websiteLink=Common.BrandLink(false,new Point(25,350)),coffeeLink=Common.BrandLink(true,new Point(310,350));
     DateTime discoveryStarted;string discoveryMessage;int discoveredCount;
     readonly ComboBox languages; readonly System.Windows.Forms.Timer timer=new System.Windows.Forms.Timer();
@@ -29,7 +31,7 @@ public class Desktop : ApplicationContext {
     List<ToolStripMenuItem> profiles=new List<ToolStripMenuItem>(); int profile;
     readonly bool smoke;
     bool resourcesDisposed;
-    string integrationReport;DateTime integrationDeadline;DateTime? connectedAt;int integrationHold=8;
+    string integrationReport;DateTime integrationDeadline;DateTime? connectedAt;int integrationHold=8;bool simulateSuspend,suspendTriggered,simulateCrash;
     Form referenceWindow,clockWindow;Label referenceClock;RichTextBox referenceText;System.Windows.Forms.Timer clockTimer;bool observedScroll,observedKeyboard;
     public Desktop(bool test) {
         smoke=test;
@@ -46,11 +48,37 @@ public class Desktop : ApplicationContext {
         status.Location=new Point(25,115);status.Size=new Size(310,30);selectedLabel.Location=new Point(25,155);selectedLabel.Size=new Size(545,35);
         Button[] buttons={choose,connect,disconnect,about};for(int i=0;i<buttons.Length;i++){buttons[i].Location=new Point(25+i*140,210);buttons[i].Size=new Size(130,38);buttons[i].ForeColor=Color.FromArgb(10,20,18);buttons[i].BackColor=Color.FromArgb(247,242,228);}
         hint.Location=new Point(25,270);hint.Size=new Size(545,60);
-        choose.Click+=delegate{Discover();};connect.Click+=delegate{Connect();};disconnect.Click+=delegate{Stop();};about.Click+=delegate{About(home);};
+        cancelResume.Location=new Point(25,310);cancelResume.Size=new Size(200,32);cancelResume.ForeColor=Color.FromArgb(10,20,18);cancelResume.BackColor=Color.FromArgb(247,242,228);cancelResume.Click+=delegate{CancelResume();state="disconnected";RefreshText();};cancelResume.Visible=false;
+        choose.Click+=delegate{CancelResume();Discover();};connect.Click+=delegate{CancelResume();Connect();};disconnect.Click+=delegate{CancelResume();Stop();};about.Click+=delegate{Desktop.About(home);};
         discoveryProgress.Location=new Point(25,190);discoveryProgress.Size=new Size(545,10);discoveryProgress.Style=ProgressBarStyle.Marquee;discoveryProgress.MarqueeAnimationSpeed=30;discoveryProgress.Visible=false;
-        home.Controls.AddRange(new Control[]{picture,title,credit,languages,status,selectedLabel,choose,connect,disconnect,about,hint,discoveryProgress,websiteLink,coffeeLink});
-        home.FormClosing+=delegate(object sender,FormClosingEventArgs e){if(!smoke && (!exiting||sessionTask!=null)){e.Cancel=true;if(!exiting)home.Hide();}};
-        timer.Interval=500;timer.Tick+=delegate{Tick();};RefreshText();if(!test){timer.Start();home.Show();}
+        home.Controls.AddRange(new Control[]{picture,title,credit,languages,status,selectedLabel,choose,connect,disconnect,about,hint,discoveryProgress,websiteLink,coffeeLink,cancelResume});
+        home.FormClosing+=delegate(object sender,FormClosingEventArgs e){if(!smoke && (!exiting||sessionTask!=null)){e.Cancel=true;if(!exiting){if(reconnectAt.HasValue){CancelResume();state="disconnected";RefreshText();}home.Hide();}}};
+        timer.Interval=500;timer.Tick+=delegate{Tick();};Common.ResumedFromSleep();RefreshText();if(!test){timer.Start();home.Show();SystemEvents.PowerModeChanged+=PowerChanged;displayPower=new DisplayPowerNotifications(home.Handle,DisplayPowerChanged,SessionLockChanged);}
+    }
+    void SessionLockChanged(bool locked) {if(resourcesDisposed)return;sessionLocked=locked;userPresent=!locked;if(session!=null)Common.SaveJson(Path.Combine(session,"session-lock-event.json"),new{locked=locked,utc=DateTime.UtcNow});if(locked&&resumeEligible){resumeWanted=true;resumeDetected=false;reconnectAt=null;CloseResumePopup();if(sessionTask!=null)Stop();RefreshText();}else if(!locked&&resumeWanted){resumeDetected=true;displayWakeAt=DateTime.UtcNow;StartResumeCountdown();}}
+    void DisplayPowerChanged(Guid setting,int value) {
+        if(resourcesDisposed)return;
+        if(session!=null)Common.SaveJson(Path.Combine(session,"display-power-event.json"),new{setting=setting==DisplayPowerNotifications.Presence?"presence":"display",value=value,utc=DateTime.UtcNow});
+        if(setting==DisplayPowerNotifications.Presence){userPresent=value==0;if(!userPresent&&resumeEligible){resumeWanted=true;resumeDetected=false;if(reconnectAt.HasValue){reconnectAt=null;CloseResumePopup();RefreshText();}}if(userPresent&&resumeWanted){resumeDetected=true;displayWakeAt=DateTime.UtcNow;StartResumeCountdown();}}
+        else if(value==0&&resumeEligible){resumeWanted=true;resumeDetected=false;displayWakeAt=null;}
+        else if(value==1&&resumeWanted){resumeDetected=true;displayWakeAt=DateTime.UtcNow;StartResumeCountdown();}
+    }
+    void PowerChanged(object sender,PowerModeChangedEventArgs e) {if(e.Mode!=PowerModes.Suspend&&e.Mode!=PowerModes.Resume)return;try{home.BeginInvoke(new Action(()=>{if(resourcesDisposed)return;if(session!=null)Common.SaveJson(Path.Combine(session,"power-event.json"),new{mode=e.Mode.ToString(),utc=DateTime.UtcNow});if(e.Mode==PowerModes.Suspend){resumeWanted=sessionTask!=null||resumeEligible;resumeDetected=false;}else if(sessionTask!=null||resumeWanted||resumeEligible){resumeWanted=true;resumeDetected=true;}if(sessionTask!=null&&resumeWanted)Stop();}));}catch(Exception error){if(!resourcesDisposed)Log(error);}}
+    void CloseResumePopup() {if(resumeDialog!=null){var dialog=resumeDialog;resumeDialog=null;dialog.Dispose();resumeCounter=null;}}
+    void CancelResume() {resumeWanted=false;resumeDetected=false;resumeEligible=false;reconnectAt=null;cancelResume.Visible=false;CloseResumePopup();}
+    void ResumeNow() {CancelResume();resumeAttempts++;connectedAt=null;if(integrationResume)integrationHold=20;integrationDeadline=DateTime.UtcNow.AddSeconds(integrationHold+150);Connect();}
+    void StartResumeCountdown() {
+        if(!resumeWanted||!resumeDetected||!userPresent||sessionLocked||failed||exiting||selected==null||sessionTask!=null||reconnectAt.HasValue)return;
+        reconnectAt=DateTime.UtcNow.AddSeconds(10);state="reconnecting";home.Show();RefreshText();
+        var popup=new Form {Text=Common.T("resumeDialogTitle")+" — CastBridge",ClientSize=new Size(600,360),StartPosition=FormStartPosition.CenterScreen,FormBorderStyle=FormBorderStyle.FixedDialog,MaximizeBox=false,MinimizeBox=false,TopMost=true,Icon=Common.Icon(),BackColor=Color.FromArgb(10,20,18),ForeColor=Color.FromArgb(247,242,228),Font=new Font("Segoe UI",11)};
+        var title=new Label {Text=Common.T("resumeDialogTitle"),Location=new Point(20,15),Size=new Size(560,40),Font=new Font("Segoe UI",20,FontStyle.Bold),ForeColor=Color.FromArgb(212,175,55),TextAlign=ContentAlignment.MiddleCenter};
+        var receiver=new Label {Text=Name(),Location=new Point(20,60),Size=new Size(560,38),Font=new Font("Segoe UI",12,FontStyle.Bold),TextAlign=ContentAlignment.MiddleCenter};
+        var explanation=new Label {Text=Common.T("resumeHint"),Location=new Point(20,100),Size=new Size(560,45),TextAlign=ContentAlignment.MiddleCenter};
+        resumeCounter=new Label {Text="10 s",Location=new Point(20,145),Size=new Size(560,85),Font=new Font("Segoe UI",48,FontStyle.Bold),TextAlign=ContentAlignment.MiddleCenter};
+        var now=new Button {Text=Common.T("reconnectNow"),Location=new Point(20,245),Size=new Size(265,50),Font=new Font("Segoe UI",12,FontStyle.Bold),BackColor=Color.FromArgb(212,175,55),ForeColor=Color.FromArgb(10,20,18)};
+        var cancel=new Button {Text=Common.T("cancelReconnect"),Location=new Point(315,245),Size=new Size(265,50),Font=new Font("Segoe UI",12),BackColor=Color.FromArgb(247,242,228),ForeColor=Color.FromArgb(10,20,18)};
+        now.Click+=delegate{ResumeNow();};cancel.Click+=delegate{CancelResume();state="disconnected";RefreshText();};popup.FormClosing+=delegate{if(resumeDialog==popup){CancelResume();state="disconnected";RefreshText();}};
+        popup.Controls.AddRange(new Control[]{title,receiver,explanation,resumeCounter,now,cancel,Common.BrandLink(false,new Point(20,325)),Common.BrandLink(true,new Point(350,325))});popup.CancelButton=cancel;resumeDialog=popup;popup.Show(home);popup.Activate();
     }
     void Log(Exception e) {File.AppendAllText(Path.Combine(root,"artifacts","desktop-errors.log"),DateTime.UtcNow.ToString("o")+" "+e+Environment.NewLine);}
     void Problem(string key,Exception e=null) {if(e!=null)Log(e);tray.ShowBalloonTip(8000,"CastBridge — MateKraft",Common.T(key),ToolTipIcon.Error);if(home.Visible)MessageBox.Show(home,Common.T(key),"CastBridge",MessageBoxButtons.OK,MessageBoxIcon.Warning);}
@@ -62,14 +90,15 @@ public class Desktop : ApplicationContext {
         discoveryProgress.Visible=state=="discovering";home.UseWaitCursor=state=="discovering";UpdateDiscoveryFeedback();
         choose.Text=Common.T("select");connect.Text=Common.T("connect");disconnect.Text=Common.T("disconnect");about.Text=Common.T("about");
         bool active=sessionTask!=null;choose.Enabled=!active && !busy;connect.Enabled=!active && !busy && selected!=null && !failed;disconnect.Enabled=active && state!="disconnecting";
+        cancelResume.Text=Common.T("cancelResume");cancelResume.Visible=reconnectAt.HasValue;choose.Enabled&=!reconnectAt.HasValue;connect.Enabled&=!reconnectAt.HasValue;if(reconnectAt.HasValue){status.Text=String.Format(Common.T("resumeCountdown"),Math.Max(0,(int)Math.Ceiling((reconnectAt.Value-DateTime.UtcNow).TotalSeconds)));hint.Text=Common.T("resumeHint");hint.Height=35;}else hint.Height=60;
         tray.Text="CastBridge — MateKraft: "+Common.T(state);
         menu.Items.Clear();menu.Items.Add(new ToolStripMenuItem("CastBridge — "+Common.T("credit")){Enabled=false});menu.Items.Add(new ToolStripMenuItem(Common.T(state)){Enabled=false});
-        Item("select",()=>Discover(),!active&&!busy);Item("rename",()=>Rename(),!active&&selected!=null);
+        Item("select",()=>{CancelResume();Discover();},choose.Enabled);Item("rename",()=>Rename(),!active&&selected!=null&&!reconnectAt.HasValue);
         var latency=new ToolStripMenuItem(Common.T("latency")){Enabled=!active&&selected!=null};profiles.Clear();
         string[] keys={"stable","reduced","minimum"};for(int i=0;i<keys.Length;i++){int captured=i;var item=new ToolStripMenuItem(Common.T(keys[i])){Checked=profile==i};item.Click+=delegate{profile=captured;selected["lowLatency"]=profile>0;selected["aggressiveLatency"]=profile==2;Save();RefreshText();};latency.DropDownItems.Add(item);profiles.Add(item);}menu.Items.Add(latency);
         var language=new ToolStripMenuItem(Common.T("language"));string[] labels={"English","Español","Norsk (bokmål)"};for(int i=0;i<labels.Length;i++){int captured=i;var item=new ToolStripMenuItem(labels[i]){Checked=languages.SelectedIndex==i};item.Click+=delegate{languages.SelectedIndex=captured;};language.DropDownItems.Add(item);}menu.Items.Add(language);
-        Item("connect",()=>Connect(),connect.Enabled);Item("disconnect",()=>Stop(),disconnect.Enabled);Item("sync",()=>File.WriteAllText(Path.Combine(session,"sync"),"sync"),active&&state=="connected");
-        Item("about",()=>About(home));Item("website",()=>Process.Start(Common.Website));Item("coffee",()=>Process.Start(Common.Coffee));Item("exit",()=>{exiting=true;if(active){home.Show();Stop();}else ExitThread();},!busy);
+        Item("connect",()=>{CancelResume();Connect();},connect.Enabled);Item("disconnect",()=>{CancelResume();Stop();},disconnect.Enabled);Item("sync",()=>File.WriteAllText(Path.Combine(session,"sync"),"sync"),active&&state=="connected");
+        if(reconnectAt.HasValue)Item("cancelResume",()=>{CancelResume();state="disconnected";RefreshText();});Item("about",()=>About(home));Item("website",()=>Process.Start(Common.Website));Item("coffee",()=>Process.Start(Common.Coffee));Item("exit",()=>{CancelResume();exiting=true;if(active){home.Show();Stop();}else ExitThread();},!busy);
     }
     void UpdateDiscoveryFeedback() {if(state=="discovering")status.Text=String.Format(Common.T("discoveryProgress"),(int)(DateTime.UtcNow-discoveryStarted).TotalSeconds);else if(state=="disconnected"&&discoveryMessage!=null)status.Text=discoveryMessage=="devicesFound"?String.Format(Common.T(discoveryMessage),discoveredCount):Common.T(discoveryMessage);}
     void Rename() {using(var dialog=new Form {Text=Common.T("screenTitle"),ClientSize=new Size(440,110),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon()}){var text=new TextBox {Text=Name(),MaxLength=80,Location=new Point(15,15),Width=410};var save=new Button {Text=Common.T("save"),DialogResult=DialogResult.OK,Location=new Point(310,60)};dialog.Controls.AddRange(new Control[]{text,save});dialog.AcceptButton=save;if(dialog.ShowDialog(home)==DialogResult.OK && !String.IsNullOrWhiteSpace(text.Text)){selected["displayName"]=text.Text.Trim();Save();RefreshText();}}}
@@ -100,8 +129,9 @@ public class Desktop : ApplicationContext {
         sessionTask=Task.Run(()=>Session(id,name,latency));RefreshText();
     }
     public void ConnectNow() {Connect();}
-    public void BeginIntegration(string report,int hold=8) {if(selected==null)throw new InvalidOperationException("Integration requires an already selected receiver");if(hold<8||hold>600)throw new ArgumentOutOfRangeException("hold");integrationHold=hold;integrationReport=report;integrationDeadline=DateTime.UtcNow.AddSeconds(hold+150);Connect();}
+    public void BeginIntegration(string report,int hold=8,bool suspend=false,bool crash=false,bool resume=false) {if(selected==null)throw new InvalidOperationException("Integration requires an already selected receiver");if(hold<8||hold>600)throw new ArgumentOutOfRangeException("hold");integrationResume=resume;simulateSuspend=suspend;simulateCrash=crash;integrationHold=hold;integrationReport=report;integrationDeadline=DateTime.UtcNow.AddSeconds(hold+150);Connect();}
     void OpenReference(Dictionary<string,object> data,Dictionary<string,object> row) {
+        if(clockTimer!=null){clockTimer.Stop();clockTimer.Dispose();}if(referenceWindow!=null)referenceWindow.Dispose();if(clockWindow!=null)clockWindow.Dispose();
         var bounds=(Dictionary<string,object>)((Dictionary<string,object>)data["bounds"])[Convert.ToString(row["source"])];int x=Convert.ToInt32(bounds["x"]),y=Convert.ToInt32(bounds["y"]);
         referenceWindow=new Form {Text="CastBridge — "+Common.T("validationTitle"),StartPosition=FormStartPosition.Manual,Location=new Point(x+35,y+35),Size=new Size(1200,630),Icon=Common.Icon()};
         referenceClock=new Label {Dock=DockStyle.Top,Height=65,Font=new Font("Segoe UI",30,FontStyle.Bold),TextAlign=ContentAlignment.MiddleLeft};
@@ -116,7 +146,7 @@ public class Desktop : ApplicationContext {
     void Session(string id,string name,int latency) {
         string python=Path.Combine(root,".venv","Scripts","python.exe"),baseline=Path.Combine(session,"monitor-cast-baseline.json"),log=Path.Combine(session,"monitor-cast.log"),target=null;
         NativeSoftwareDisplay display=null;var errors=new List<string>();bool restored=false,closed=false;Exception failure=null;
-        Action<string[]> run=args=>Common.Run(python,args,root,90000000,log);
+        Action<string[]> run=args=>Common.Run(python,new[]{"-X","faulthandler"}.Concat(args),root,90000000,log);
         try {
             using(var query=new ManagementObjectSearcher("SELECT HardwareID FROM Win32_PnPEntity"))foreach(ManagementObject row in query.Get()){using(row){var ids=row["HardwareID"] as string[];if(ids!=null&&ids.Any(h=>String.Equals(h,"MttVDD",StringComparison.OrdinalIgnoreCase)||String.Equals(h,@"Root\MttVDD",StringComparison.OrdinalIgnoreCase)))throw new InvalidOperationException("Existing VDD device; refusing concurrent session");}}
             var config=new System.Xml.XmlDocument();config.Load(@"C:\VirtualDisplayDriver\vdd_settings.xml");if(config.SelectSingleNode("//monitors/count").InnerText!="1"||config.SelectSingleNode("//resolution/width").InnerText!="1280"||config.SelectSingleNode("//resolution/height").InnerText!="720"||config.SelectSingleNode("//resolution/refresh_rate").InnerText!="60"||config.SelectSingleNode("//options/HardwareCursor").InnerText!="false")throw new InvalidDataException("Unexpected driver configuration");
@@ -136,13 +166,36 @@ public class Desktop : ApplicationContext {
     }
     void Stop() {if(sessionTask!=null){File.WriteAllText(Path.Combine(session,"stop"),"stop");state="disconnecting";RefreshText();}}
     void Tick() {
-        try{
+        try {
             UpdateDiscoveryFeedback();
-            if(sessionTask==null)return;
-            if(sessionTask.IsCompleted){bool faulted=sessionTask.IsFaulted;Exception error=sessionTask.Exception;sessionTask=null;state=faulted?"error":"disconnected";failed=faulted;RefreshText();if(integrationReport!=null){bool recovered=referenceWindow!=null&&!referenceWindow.IsDisposed&&Screen.PrimaryScreen.Bounds.Contains(referenceWindow.Location);Common.SaveJson(integrationReport,new{success=!faulted,connected=connectedAt.HasValue,referenceRecovered=recovered,scrollObserved=observedScroll,pageKeyObserved=observedKeyboard,cleanup=Common.Json.DeserializeObject(File.ReadAllText(Path.Combine(session,"monitor-cast-result.json")))});exiting=true;ExitThread();return;}if(faulted){exiting=false;Problem("cleanupFailed",error);}else if(exiting)ExitThread();}
-            else if(state=="connecting"){string log=Path.Combine(session,"monitor-cast.log");if(File.Exists(log)&&File.ReadAllText(log).Contains("\"receiver_confirmed\": \"PLAYING\"")){state="connected";RefreshText();}}
-            if(integrationReport!=null&&sessionTask!=null&&state!="disconnecting") {if(state=="connected"&&!connectedAt.HasValue)connectedAt=DateTime.UtcNow;if((connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(integrationHold))||DateTime.UtcNow>integrationDeadline)Stop();}
-        }catch(Exception e){Log(e);Problem("operationFailed");}
+            if(displayWakeAt.HasValue&&sessionTask!=null&&state=="connected"&&DateTime.UtcNow-displayWakeAt.Value>TimeSpan.FromSeconds(30)){resumeWanted=false;resumeDetected=false;displayWakeAt=null;}
+            if(Common.ResumedFromSleep()&&(sessionTask!=null||resumeWanted||resumeEligible)){resumeWanted=true;resumeDetected=true;if(sessionTask!=null)Stop();}
+            if(reconnectAt.HasValue) {
+                int remaining=Math.Max(0,(int)Math.Ceiling((reconnectAt.Value-DateTime.UtcNow).TotalSeconds));status.Text=String.Format(Common.T("resumeCountdown"),remaining);
+                if(resumeCounter!=null)resumeCounter.Text=remaining+" s";if(remaining==0)ResumeNow();
+            }
+            if(sessionTask==null){StartResumeCountdown();return;}
+            if(sessionTask.IsCompleted) {
+                bool faulted=sessionTask.IsFaulted;Exception error=sessionTask.Exception;
+                var cleanup=Common.Json.Deserialize<Dictionary<string,object>>(File.ReadAllText(Path.Combine(session,"monitor-cast-result.json")));
+                bool safe=Common.Objects(cleanup["cleanupErrors"]).Length==0&&Convert.ToBoolean(cleanup["physicalRestored"])&&Convert.ToBoolean(cleanup["monitorClosed"]);
+                if(integrationReport!=null)integrationCleanups.Add(cleanup);sessionTask=null;state=faulted?(safe?"interrupted":"error"):"disconnected";failed=faulted&&!safe;
+                if(!safe)CancelResume();RefreshText();StartResumeCountdown();
+                if(integrationReport!=null&&!(integrationResume&&resumeAttempts==0&&resumeEligible&&safe)) {
+                    bool recovered=referenceWindow!=null&&!referenceWindow.IsDisposed&&Screen.PrimaryScreen.Bounds.Contains(referenceWindow.Location);
+                    Common.SaveJson(integrationReport,new{success=!faulted,connected=connectedAt.HasValue,referenceRecovered=recovered,scrollObserved=observedScroll,pageKeyObserved=observedKeyboard,suspendHandlerExercised=suspendTriggered,resumeAttempts=resumeAttempts,sessionCleanups=integrationCleanups,cleanup=cleanup});exiting=true;ExitThread();return;
+                }
+                if(faulted&&!resumeWanted){exiting=false;if(safe){Log(error);tray.ShowBalloonTip(8000,"CastBridge",Common.T("sessionInterrupted"),ToolTipIcon.Warning);}else Problem("cleanupFailed",error);}else if(exiting)ExitThread();
+            } else if(state=="connecting") {
+                string log=Path.Combine(session,"monitor-cast.log");if(File.Exists(log)&&File.ReadAllText(log).Contains("\"receiver_confirmed\": \"PLAYING\"")){state="connected";resumeEligible=true;RefreshText();}
+            }
+            if(integrationReport!=null&&sessionTask!=null&&state!="disconnecting") {
+                if(state=="connected"&&!connectedAt.HasValue)connectedAt=DateTime.UtcNow;
+                if(simulateCrash&&connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(15))Process.GetCurrentProcess().Kill();
+                else if(simulateSuspend&&!suspendTriggered&&connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(5)){suspendTriggered=true;PowerChanged(this,new PowerModeChangedEventArgs(PowerModes.Suspend));}
+                else if((connectedAt.HasValue&&DateTime.UtcNow-connectedAt.Value>TimeSpan.FromSeconds(integrationHold))||DateTime.UtcNow>integrationDeadline)Stop();
+            }
+        }catch(Exception e){Log(e);CancelResume();Problem("operationFailed");}
     }
     public static Form AboutForm() {
         var form=new Form {Text=Common.T("about"),ClientSize=new Size(520,350),StartPosition=FormStartPosition.CenterParent,Icon=Common.Icon(),Font=new Font("Segoe UI",10),BackColor=Color.FromArgb(10,20,18),ForeColor=Color.FromArgb(247,242,228)};
@@ -159,12 +212,14 @@ public class Desktop : ApplicationContext {
         state="disconnected";busy=false;discoveryMessage="devicesFound";discoveredCount=2;RefreshText();
         if(discoveryProgress.Visible||home.UseWaitCursor||!choose.Enabled||!status.Text.Contains("2"))throw new InvalidOperationException("Discovery completion feedback failed");
         discoveryMessage="discoveryTimeout";RefreshText();if(status.Text!=Common.T("discoveryTimeout"))throw new InvalidOperationException("Discovery timeout feedback failed");discoveryMessage=null;
+        resumeWanted=true;resumeDetected=true;reconnectAt=DateTime.UtcNow.AddSeconds(10);state="reconnecting";RefreshText();if(!cancelResume.Visible||connect.Enabled||!status.Text.Contains("10"))throw new InvalidOperationException("Resume countdown state failed");cancelResume.PerformClick();if(reconnectAt.HasValue||resumeWanted||cancelResume.Visible)throw new InvalidOperationException("Resume cancellation failed");
+        var originalSelected=selected;if(selected==null)selected=new Dictionary<string,object>{{"name","Synthetic receiver"}};resumeEligible=true;DisplayPowerChanged(DisplayPowerNotifications.Presence,1);if(!resumeWanted||reconnectAt.HasValue)throw new InvalidOperationException("Standby presence transition failed");DisplayPowerChanged(DisplayPowerNotifications.Presence,0);if(!reconnectAt.HasValue||!cancelResume.Visible)throw new InvalidOperationException("Standby return countdown failed");cancelResume.PerformClick();selected=originalSelected;userPresent=true;
         var results=new List<object>();foreach(string code in new[]{"en","es","nb"}){languages.SelectedIndex=code=="en"?0:code=="es"?1:2;RefreshText();using(var dialog=AboutForm()){dialog.Show();Application.DoEvents();using(var image=new Bitmap(dialog.Width,dialog.Height)){dialog.DrawToBitmap(image,new Rectangle(0,0,image.Width,image.Height));image.Save(Path.ChangeExtension(report,"."+code+".png"));}dialog.Close();}results.Add(new{language=Common.Language,status=status.Text,connect=connect.Text,about=about.Text,credit=credit.Text,menuItems=menu.Items.Count});}Common.SaveJson(report,new{success=true,languages=results,powershellUsed=false});
     }
     protected override void Dispose(bool disposing) {
         // ApplicationContext and its owner may both dispose the context at exit.
         if(disposing && !resourcesDisposed) {
-            resourcesDisposed=true;timer.Stop();timer.Dispose();tray.Visible=false;
+            resourcesDisposed=true;CloseResumePopup();SystemEvents.PowerModeChanged-=PowerChanged;if(displayPower!=null)displayPower.Dispose();timer.Stop();timer.Dispose();tray.Visible=false;
             if(clockTimer!=null){clockTimer.Stop();clockTimer.Dispose();}if(referenceWindow!=null)referenceWindow.Dispose();if(clockWindow!=null)clockWindow.Dispose();
             var icon=tray.Icon;tray.Dispose();if(icon!=null)icon.Dispose();menu.Dispose();home.Dispose();
         }
@@ -179,7 +234,7 @@ public static class Program {
             using(var mutex=new Mutex(false,"Local\\CastAggregatorTray")) {
                 bool acquired=false;try{acquired=mutex.WaitOne(args.Contains("--connect")?10000:0);}catch(AbandonedMutexException){acquired=true;}
                 if(!acquired){MessageBox.Show(Common.T("alreadyOpen"),"CastBridge");return 1;}
-                try{using(var context=new Desktop(false)){if((args.Length==2||args.Length==3)&&args[0]=="--integration-session")context.BeginIntegration(args[1],args.Length==3?Int32.Parse(args[2]):8);else if(args.Contains("--connect"))context.ConnectNow();Application.Run(context);}}finally{mutex.ReleaseMutex();}
+                try{using(var context=new Desktop(false)){if(args.Length>=2&&args.Length<=4&&args[0]=="--integration-session"){if(args.Length==4&&!new[]{"suspend","crash","resume"}.Contains(args[3]))throw new ArgumentException("Unknown integration action");context.BeginIntegration(args[1],args.Length>=3?Int32.Parse(args[2]):8,args.Length==4&&args[3]=="suspend",args.Length==4&&args[3]=="crash",args.Length==4&&args[3]=="resume");}else if(args.Contains("--connect"))context.ConnectNow();Application.Run(context);}}finally{mutex.ReleaseMutex();}
             }return 0;
         }catch(Exception e){MessageBox.Show(e.Message,"CastBridge",MessageBoxButtons.OK,MessageBoxIcon.Error);return 1;}
     }

@@ -14,6 +14,28 @@ from zeroconf import Zeroconf
 from prototype.stream import MemoryStream
 from prototype.live_edge import LiveEdgeControl
 
+class ReceiverHealth:
+    """Bound disconnected or stalled playback, including stale media status."""
+    def __init__(self):
+        self.unavailable_since = None
+        self.stalled_since = None
+
+    def check(self, connected, content, state, now):
+        if not connected or not content:
+            if self.unavailable_since is None:
+                self.unavailable_since = now
+            elif now - self.unavailable_since > 30:
+                raise RuntimeError("Receiver unavailable for 30 seconds; stopping owned capture")
+        else:
+            self.unavailable_since = None
+        if connected and content and state in ("BUFFERING", "IDLE"):
+            if self.stalled_since is None:
+                self.stalled_since = now
+            elif now - self.stalled_since > 15:
+                raise RuntimeError("Receiver playback stalled for 15 seconds")
+        else:
+            self.stalled_since = None
+
 
 def receiver_idle(cast, live_edge):
     status = cast.status
@@ -100,43 +122,32 @@ def run(model, play=False, seconds=20, capture_target=None, device_id=None, stop
                               "playlist_ready_seconds": round(playlist_ready - started, 2),
                               "receiver_start_seconds": round(time.monotonic() - requested, 2)}))
             deadline = time.monotonic() + seconds
-            unavailable_since = None
+            health = ReceiverHealth()
             synchronize = low_latency
             next_diagnostic = time.monotonic() + 5
-            stalled_since = None
             while time.monotonic() < deadline:
                 if stop_file and Path(stop_file).exists():
                     break
                 content = cast.media_controller.status.content_id
                 if content and content != owned_content:
                     raise RuntimeError("Receiver session changed; stopping owned capture")
-                if cast.media_controller.status.player_state in ("BUFFERING", "IDLE"):
-                    if stalled_since is None:
-                        stalled_since = time.monotonic()
-                        print(json.dumps({"playback_state": cast.media_controller.status.player_state}))
-                    elif time.monotonic() - stalled_since > 15:
-                        raise RuntimeError("Receiver playback stalled for 15 seconds")
-                else:
-                    stalled_since = None
-                if not content:
-                    if unavailable_since is None:
-                        unavailable_since = time.monotonic()
-                        print(json.dumps({"receiver_status": "temporarily_unavailable"}))
-                    elif time.monotonic() - unavailable_since > 30:
-                        raise RuntimeError("Receiver unavailable for 30 seconds; stopping owned capture")
-                elif unavailable_since is not None:
-                    unavailable_since = None
-                    print(json.dumps({"receiver_status": "recovered"}))
+                connected = cast.socket_client.is_connected
+                was_unavailable = health.unavailable_since is not None
+                health.check(connected, content, cast.media_controller.status.player_state, time.monotonic())
+                if was_unavailable != (health.unavailable_since is not None):
+                    print(json.dumps({"receiver_status": "temporarily_unavailable" if health.unavailable_since is not None else "recovered"}))
                 if stream.capture_failure:
                     if stream.capture_change:
                         print(json.dumps({"capture_change": stream.capture_change}))
                     raise RuntimeError("Capture stopped: " + stream.capture_failure)
                 if stream.process is None or stream.process.poll() is not None:
-                    raise RuntimeError("Encoder stopped during the Cast session")
+                    code = None if stream.process is None else stream.process.returncode
+                    raise RuntimeError("Encoder stopped during the Cast session: " + str(code)
+                                       + " | " + " | ".join(stream.encoder_errors))
                 if sync_file and Path(sync_file).exists():
                     Path(sync_file).unlink()
                     synchronize = True
-                if synchronize and content == owned_content:
+                if synchronize and connected and content == owned_content:
                     synchronize = False
                     try:
                         outcome = live_edge.seek_latest(owned_content)
@@ -151,7 +162,7 @@ def run(model, play=False, seconds=20, capture_target=None, device_id=None, stop
                 time.sleep(0.2)
         finally:
             try:
-                if cast is not None and owned_content is not None:
+                if cast is not None and owned_content is not None and cast.socket_client.is_connected:
                     cleanup_session = owned_session
                     if cast.media_controller.status.content_id == owned_content:
                         if cast.status is not None:

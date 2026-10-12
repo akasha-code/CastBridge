@@ -9,6 +9,7 @@ Copy-Item -LiteralPath (Join-Path $root 'third_party\licenses') -Destination (Jo
 Get-ChildItem (Join-Path $root 'prototype') -Filter '*.py' -File | Copy-Item -Destination (Join-Path $stage 'prototype')
 Get-ChildItem (Join-Path $root 'docs') -Filter 'downloads*.md' -File | Copy-Item -Destination (Join-Path $stage 'docs')
 Copy-Item -LiteralPath (Join-Path $root 'docs\validation.md') -Destination (Join-Path $stage 'docs')
+Copy-Item -LiteralPath (Join-Path $root 'docs\signing.md') -Destination (Join-Path $stage 'docs')
 foreach ($name in @('castbridge.ico','castbridge.png','castbridge-banner.svg','languages.json')) {Copy-Item -LiteralPath (Join-Path $root ('assets\'+$name)) -Destination (Join-Path $stage 'assets')}
 Copy-Item -LiteralPath (Join-Path $root 'artifacts\castaggregator-device.dll') -Destination (Join-Path $stage 'artifacts')
 Copy-Item -LiteralPath (Join-Path $root 'driver\vdd_settings.xml') -Destination (Join-Path $stage 'driver')

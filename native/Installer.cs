@@ -9,7 +9,25 @@ using System.Reflection;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using Microsoft.Win32;
+using System.Security.Principal;
 namespace CastBridge {
+public static class DriverConfiguration {
+    public const string Folder=@"C:\VirtualDisplayDriver", FileName="vdd_settings.xml";
+    public static bool Apply(string folder,byte[] content) {
+        folder=Common.ValidateDestination(folder);Common.EnsureNoLinks(folder);Directory.CreateDirectory(folder);Common.EnsureNoLinks(folder);
+        string target=Common.Under(folder,FileName);
+        if(File.Exists(target)&&File.ReadAllBytes(target).SequenceEqual(content))return false;
+        string temporary=Common.Under(folder,FileName+"."+Guid.NewGuid().ToString("N")+".tmp");
+        try{File.WriteAllBytes(temporary,content);Common.EnsureNoLinks(folder);if(File.Exists(target))File.Replace(temporary,target,Common.Under(folder,FileName+"."+DateTime.UtcNow.ToString("yyyyMMdd-HHmmss")+"."+Guid.NewGuid().ToString("N")+".bak"));else File.Move(temporary,target);return true;}
+        finally{if(File.Exists(temporary))File.Delete(temporary);}
+    }
+    public static byte[] Template() {using(var input=Assembly.GetExecutingAssembly().GetManifestResourceStream("driver-template.xml"))using(var output=new MemoryStream()){input.CopyTo(output);return output.ToArray();}}
+    public static void Configure() {
+        if(!new WindowsPrincipal(WindowsIdentity.GetCurrent()).IsInRole(WindowsBuiltInRole.Administrator))throw new InvalidOperationException(Common.T("adminRequired"));
+        if(Common.Active()||!Requirements.DeviceFree())throw new InvalidOperationException(Common.T("closedHelp"));
+        Apply(Folder,Template());
+    }
+}
 public sealed class Installer : Form {
     readonly ComboBox languages=Common.Languages();readonly ListView list=new ListView();readonly TextBox help=new TextBox(),destination=new TextBox();
     readonly Label status=new Label(),credit=new Label(),folderLabel=new Label(),unsigned=new Label();readonly Button check=new Button(),download=new Button(),install=new Button(),browse=new Button(),template=new Button(),about=new Button();
@@ -25,7 +43,7 @@ public sealed class Installer : Form {
         help.Location=new Point(20,395);help.Size=new Size(780,115);help.Multiline=true;help.ReadOnly=true;help.ScrollBars=ScrollBars.Vertical;
         Button[] buttons={check,download,template,about,install};int[] widths={155,145,205,120,115};int x=20;for(int i=0;i<buttons.Length;i++){buttons[i].Location=new Point(x,525);buttons[i].Size=new Size(widths[i],45);x+=widths[i]+8;}
         status.Location=new Point(20,585);status.Size=new Size(780,50);unsigned.Location=new Point(20,620);unsigned.Size=new Size(780,27);unsigned.ForeColor=Color.FromArgb(212,175,55);credit.ForeColor=Color.FromArgb(212,175,55);foreach(var button in buttons){button.ForeColor=Color.FromArgb(10,20,18);button.BackColor=Color.FromArgb(247,242,228);}
-        install.Enabled=false;download.Enabled=false;check.Click+=async delegate{await Check();};download.Click+=delegate{if(list.SelectedItems.Count>0)Process.Start(((Requirement)list.SelectedItems[0].Tag).Url);};template.Click+=delegate{SaveTemplate();};about.Click+=delegate{Desktop.About(this);};install.Click+=async delegate{if(complete){Process.Start(Path.Combine(destination.Text,"CastBridge.exe"));Close();}else await Install();};
+        install.Enabled=false;download.Enabled=false;check.Click+=async delegate{await Check();};download.Click+=delegate{if(list.SelectedItems.Count>0)Process.Start(((Requirement)list.SelectedItems[0].Tag).Url);};template.Click+=async delegate{await ConfigureDriver();};about.Click+=delegate{Desktop.About(this);};install.Click+=async delegate{if(complete){Process.Start(Path.Combine(destination.Text,"CastBridge.exe"));Close();}else await Install();};
         Controls.AddRange(new Control[]{title,credit,languages,folderLabel,destination,browse,list,help,check,download,template,about,install,status,unsigned,websiteLink,coffeeLink});
         FormClosing+=delegate(object sender,FormClosingEventArgs e){if(busy){e.Cancel=true;MessageBox.Show(this,Common.T("waiting"),"CastBridge");}};
         RefreshText();if(!test)Shown+=async delegate{await Check();};
@@ -50,7 +68,15 @@ public sealed class Installer : Form {
         catch(Exception e){status.Text=Common.T("operationFailed");MessageBox.Show(this,e.Message,"CastBridge");}
         finally{busy=false;Enable(true);}
     }
-    void SaveTemplate() {using(var dialog=new SaveFileDialog {FileName="vdd_settings.xml",Filter="XML|*.xml",OverwritePrompt=true}){if(dialog.ShowDialog(this)!=DialogResult.OK)return;using(var input=Assembly.GetExecutingAssembly().GetManifestResourceStream("driver-template.xml"))using(var output=File.Create(dialog.FileName))input.CopyTo(output);}}
+    async Task ConfigureDriver() {
+        if(busy)return;
+        if(MessageBox.Show(this,Common.T("configConfirm"),"CastBridge",MessageBoxButtons.OKCancel,MessageBoxIcon.Information)!=DialogResult.OK)return;
+        busy=true;Enable(false);status.Text=Common.T("configuring");
+        try{using(var process=Process.Start(new ProcessStartInfo(Application.ExecutablePath,"--configure-driver "+Common.Language){UseShellExecute=true,Verb="runas"})){await Task.Run(()=>process.WaitForExit());if(process.ExitCode!=0)throw new InvalidOperationException(Common.T("configFailed"));}status.Text=Common.T("configDone");}
+        catch(System.ComponentModel.Win32Exception e){if(e.NativeErrorCode==1223)status.Text=Common.T("configCancelled");else {status.Text=Common.T("configFailed");MessageBox.Show(this,e.Message,"CastBridge");}}
+        catch(Exception e){status.Text=Common.T("configFailed");MessageBox.Show(this,e.Message,"CastBridge");}
+        finally{busy=false;Enable(true);}await Check();
+    }
     async Task Install() {
         if(busy)return;busy=true;Enable(false);install.Enabled=false;status.Text=Common.T("checking");string target=null;
         try {
@@ -125,6 +151,7 @@ public static class SetupProgram {
         try {
             Common.LoadLanguage("");Application.EnableVisualStyles();
             if(args.Length==1&&args[0]=="--uninstall"){string copy=Path.Combine(Path.GetTempPath(),"CastBridge-Uninstall-"+Guid.NewGuid().ToString("N")+".exe");File.Copy(Application.ExecutablePath,copy);Process.Start(copy,"--remove "+Common.Quote(Common.Root));return 0;}
+            if(args.Length==2&&args[0]=="--configure-driver"){if(!new[]{"en","es","nb"}.Contains(args[1]))throw new InvalidDataException("Invalid language");Common.Language=args[1];DriverConfiguration.Configure();return 0;}
             if(args.Length==2&&args[0]=="--remove"){Uninstall(Path.GetFullPath(args[1]));return 0;}
             if(args.Length==2&&args[0]=="--check"){var result=Requirements.Check(Common.Root);Common.SaveJson(args[1],new{ready=result.All(r=>r.Ready),checks=result,diagnostics=Requirements.Diagnostics});return 0;}
             if(args.Length==3&&(args[0]=="--upgrade-test"||args[0]=="--uninstall-test")) {
